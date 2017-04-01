@@ -1,0 +1,1 @@
+pip install -r requirements.txt --proxy http://dev-proxy.oa.com:8080
