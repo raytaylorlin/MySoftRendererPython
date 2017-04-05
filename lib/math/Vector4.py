@@ -5,7 +5,7 @@ import math
 class Vector4(object):
     Zero = [0, 0, 0, 1]
 
-    def __init__(self, x, y, z):
+    def __init__(self, x=0, y=0, z=0):
         self.x = x
         self.y = y
         self.z = z
