@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-from graphics.core.Color import Color
-from graphics.core.RenderInterface import ImageRenderer
+from graphics.base.Color import Color
 
 
 class RenderBuffer(object):
@@ -17,10 +16,8 @@ class RenderBuffer(object):
         return self.data[pos[0]][pos[1]]
 
     def Set(self, pos, color):
-        if isinstance(color, Color) or (isinstance(color, tuple) and len(color) == 4):
-            self.data[pos[0]][pos[1]] = color
-        else:
-            raise Exception('The param color is not a instance of Color or 4-tuple')
+        assert isinstance(color, Color), 'The param color is not a instance of Color'
+        self.data[pos[0]][pos[1]] = color
 
     def __str__(self):
         result = []

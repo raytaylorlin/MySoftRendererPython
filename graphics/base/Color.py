@@ -8,5 +8,9 @@ class Color(object):
         self.b = b
         self.a = a
 
+    @property
+    def tuple(self):
+        return self.r, self.g, self.b, self.a
+
     def __str__(self):
         return str((self.r, self.g, self.b, self.a))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from graphics.core.Color import Color
+from graphics.base.Color import Color
 from lib.math.Vector4 import Vector4
 
 

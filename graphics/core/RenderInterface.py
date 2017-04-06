@@ -17,7 +17,7 @@ class ImageRenderer(RenderInterface):
         pixels = image.load()
         for i in range(image.size[0]):
             for j in range(image.size[1]):
-                pixels[i, j] = buffer.data[i][j]
+                pixels[i, j] = buffer.data[i][j].tuple
 
         image.save(self.filename)
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from enum import IntFlag
-from graphics.core.Color import Color
+
+from graphics.base.Color import Color
 
 
 class MaterialShadeMode(IntFlag):
