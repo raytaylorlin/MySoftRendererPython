@@ -14,8 +14,8 @@ from lib.math.Point import Point
 def TestDrawCube():
     camera = Camera()
 
-    obj = PLGReader('res/cube.plg').LoadObject(scale=5)
-    obj.SetWorldPosition(Vector4(0, 0, 100))
+    obj = PLGReader('res/cube.plg').LoadObject()
+    obj.SetTransform(scale=5, eulerRotation=(0, 45, 0), worldPos=Vector4(0, 0, 100))
 
     buffer = RenderBuffer(color=Color(255, 255, 255))
     renderList = RenderList(Rasterizer(buffer))

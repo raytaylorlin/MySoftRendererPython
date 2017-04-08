@@ -47,15 +47,13 @@ class PLGReader(object):
 
         return data
 
-    def Deserialize(self, data, scale=1):
+    def Deserialize(self, data):
         obj = GameObject()
         obj.name = data['name']
         for v in data['vertices']:
             newVertex = Vertex()
             newVertex.SetPosition(v)
             obj.AddVertex(newVertex)
-
-        obj.Scale(scale)
 
         for p in data['polys']:
             newPoly = Poly()
@@ -65,9 +63,9 @@ class PLGReader(object):
 
         return obj
 
-    def LoadObject(self, scale=1):
+    def LoadObject(self):
         data = self.Load()
-        return self.Deserialize(data, scale)
+        return self.Deserialize(data)
 
     def __GetLine(self, f):
         while True:

@@ -2,6 +2,8 @@
 
 from enum import IntFlag
 import copy
+
+from lib.math.Matrix4x4 import Matrix4x4
 from lib.math.Vector4 import Vector4
 
 
@@ -45,18 +47,32 @@ class GameObject(object):
     def AddPoly(self, p):
         self.polyList.append(p)
 
-    def Scale(self, s):
-        """仅缩放局部坐标，最好在加载完物体之后调用"""
-        for v in self.vListLocal:
-            v.pos.x *= s
-            v.pos.y *= s
-            v.pos.z *= s
+    def SetTransform(self, scale=1, eulerRotation=(0, 0, 0), worldPos=Vector4()):
+        """设置基本变换"""
 
-    def SetWorldPosition(self, worldPos):
+        # 先缩放，再旋转，后平移
+        self.Scale(scale)
+        self.SetEulerRotation(eulerRotation[0], eulerRotation[1], eulerRotation[2])
+        self.SetWorldPosition(worldPos)
+
+    def Scale(self, scale, transformLocal=False):
+        """仅缩放局部坐标，最好在加载完物体之后调用"""
+        vList = self.vListLocal if transformLocal else self.vListTrans
+        for v in vList:
+            v.pos.x *= scale
+            v.pos.y *= scale
+            v.pos.z *= scale
+
+    def SetWorldPosition(self, worldPos, transformLocal=False):
         """设置世界坐标"""
         assert isinstance(worldPos, Vector4)
         self.worldPos = worldPos
-        self.TransformModelToWorld()
+        self.TransformModelToWorld(transformLocal)
+
+    def SetEulerRotation(self, x=0, y=0, z=0, transformLocal=False):
+        """设置旋转（使用欧拉角）"""
+        rotationMatrix = Matrix4x4.GetRotateMatrix(x, y, z)
+        self.TransformByMatrix(rotationMatrix)
 
     def CalculateRadius(self):
         """计算平均半径和最大半径"""
@@ -70,7 +86,16 @@ class GameObject(object):
         self.averageRadius = sumDistance / len(self.vListLocal)
         self.maxRadius = maxDistance
 
-    def TransformModelToWorld(self):
+    def TransformModelToWorld(self, transformLocal=False):
         """模型坐标变换到世界坐标"""
-        for i in range(len(self.vListLocal)):
-            self.vListTrans[i].pos = self.vListLocal[i].pos + self.worldPos
+        vSourceList = self.vListLocal if transformLocal else self.vListTrans
+        for i in range(len(vSourceList)):
+            self.vListTrans[i].pos = self.worldPos + vSourceList[i].pos
+
+    def TransformByMatrix(self, matrix, transformLocal=False):
+        """使用一个矩阵来变换坐标"""
+        assert isinstance(matrix, Matrix4x4)
+
+        vSourceList = self.vListLocal if transformLocal else self.vListTrans
+        for i in range(len(vSourceList)):
+            self.vListTrans[i].pos = matrix * vSourceList[i].pos
