@@ -2,6 +2,7 @@
 
 from graphics.base.Color import Color
 from lib.math.Point import Point
+from utils import log
 
 
 class Rasterizer(object):
@@ -19,6 +20,7 @@ class Rasterizer(object):
         assert isinstance(p2, Point)
         assert isinstance(color, Color)
 
+        log.logger.info('DrawLine: p1 = {0}, p2 = {1}, color = {2}'.format(p1, p2, color))
         currX, currY = p1.x, p1.y
         # 计算步长方向及dx和dy绝对值
         dx, dy = p2.x - p1.x, p2.y - p1.y

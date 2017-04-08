@@ -15,3 +15,6 @@ class Vertex(object):
         self.pos.x = pos[0]
         self.pos.y = pos[1]
         self.pos.z = pos[2]
+
+    def __str__(self):
+        return 'Pos: {0}'.format(self.pos)

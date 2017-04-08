@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from enum import IntFlag
+import copy
+from lib.math.Vector4 import Vector4
 
 
 class GameObjectState(IntFlag):
@@ -22,6 +24,7 @@ class GameObject(object):
         self.state = GameObjectState.Active | GameObjectState.Visible
         self.attr = GameObjectAttribute.Null
         self.name = ''
+        self.worldPos = Vector4()
         self.vListLocal = []
         self.vListTrans = []
         self.polyList = []
@@ -30,9 +33,14 @@ class GameObject(object):
         self.averageRadius = 0
         self.maxRadius = 0
 
+    def IsEnabled(self):
+        return self.state & GameObjectState.Active and \
+               self.state & GameObjectState.Visible and \
+               not self.state & GameObjectState.Culled
+
     def AddVertex(self, v):
         self.vListLocal.append(v)
-        self.vListTrans.append(v)
+        self.vListTrans.append(copy.deepcopy(v))
 
     def AddPoly(self, p):
         self.polyList.append(p)
@@ -44,7 +52,14 @@ class GameObject(object):
             v.pos.y *= s
             v.pos.z *= s
 
+    def SetWorldPosition(self, worldPos):
+        """设置世界坐标"""
+        assert isinstance(worldPos, Vector4)
+        self.worldPos = worldPos
+        self.TransformModelToWorld()
+
     def CalculateRadius(self):
+        """计算平均半径和最大半径"""
         sumDistance = 0
         maxDistance = 0
         for v in self.vListLocal:
@@ -54,3 +69,8 @@ class GameObject(object):
                 maxDistance = d
         self.averageRadius = sumDistance / len(self.vListLocal)
         self.maxRadius = maxDistance
+
+    def TransformModelToWorld(self):
+        """模型坐标变换到世界坐标"""
+        for i in range(len(self.vListLocal)):
+            self.vListTrans[i].pos = self.vListLocal[i].pos + self.worldPos

@@ -7,10 +7,10 @@ class RenderBuffer(object):
     DefaultWidth = 800
     DefaultHeight = 800
 
-    def __init__(self, width=DefaultWidth, height=DefaultHeight):
+    def __init__(self, width=DefaultWidth, height=DefaultHeight, color=Color()):
         self.width = width
         self.height = height
-        self.data = [[Color() for i in range(self.width)] for j in range(self.height)]
+        self.data = [[color for i in range(self.width)] for j in range(self.height)]
 
     def Get(self, pos):
         return self.data[pos[0]][pos[1]]
