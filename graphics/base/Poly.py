@@ -4,6 +4,7 @@ import copy
 from enum import IntFlag
 from graphics.base.Material import Material
 from lib.math.Vector4 import Vector4
+from utils.BitMixin import BitMixin
 
 
 class PolyState(IntFlag):
@@ -14,7 +15,7 @@ class PolyState(IntFlag):
     Lit = 8
 
 
-class Poly(object):
+class Poly(BitMixin):
     def __init__(self):
         self.state = PolyState.Active
         self.material = Material()
@@ -32,3 +33,10 @@ class Poly(object):
         self.vList.append(v)
         self.tvList.append(copy.deepcopy(v))
         self.vIndexList.append(i)
+
+    def GetNormal(self):
+        if self.normal.IsZero():
+            v01 = self.tvList[1].pos - self.tvList[0].pos
+            v02 = self.tvList[2].pos - self.tvList[0].pos
+            self.normal = Vector4.Cross(v01, v02)
+        return self.normal

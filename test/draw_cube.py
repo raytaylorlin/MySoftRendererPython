@@ -12,6 +12,11 @@ from lib.math.Point import Point
 
 
 def TestDrawCube():
+    DrawCube('output/draw_cube.png', removeBackFace=False)
+    DrawCube('output/draw_cube_removebackface.png', removeBackFace=True)
+
+
+def DrawCube(filename, removeBackFace):
     camera = Camera()
 
     obj = PLGReader('res/cube.plg').LoadObject()
@@ -20,10 +25,12 @@ def TestDrawCube():
     buffer = RenderBuffer(color=Color(255, 255, 255))
     renderList = RenderList(Rasterizer(buffer))
     renderList.AddObject(obj, insertLocal=False)
+    if removeBackFace:
+        renderList.CheckBackFace(camera)
     renderList.TransformWorldToCamera(camera)
     renderList.TransformCameraToPerspective(camera)
     renderList.TransformPerspectiveToScreen(camera)
     renderList.RenderWire()
 
-    renderer = ImageRenderer('output/draw_cube.png')
+    renderer = ImageRenderer(filename)
     renderer.Render(buffer)

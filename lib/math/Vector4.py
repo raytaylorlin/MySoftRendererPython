@@ -64,6 +64,9 @@ class Vector4(object):
         self.y /= mag
         self.z /= mag
 
+    def IsZero(self):
+        return self.x == 0 and self.y == 0 and self.z == 0
+
     def __add__(self, other):
         return Vector4(self.x + other.x, self.y + other.y, self.z + other.z)
 

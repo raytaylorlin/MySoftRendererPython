@@ -3,7 +3,7 @@
 from enum import Enum
 import copy
 
-from graphics.base.Poly import Poly
+from graphics.base.Poly import Poly, PolyState
 from lib.math.Point import Point
 from lib.math.Vector4 import Vector4
 
@@ -65,6 +65,16 @@ class RenderList(object):
                 z = vertex.pos.z
                 vertex.pos.x = alpha + alpha * vertex.pos.x
                 vertex.pos.y = beta - beta * vertex.pos.y
+
+    def CheckBackFace(self, camera):
+        """检测所有多边形的背面，以进行背面消除"""
+        for poly in self.polyList:
+            poly.Clear(PolyState.Active)
+
+            normal = poly.GetNormal()
+            v = camera.pos - poly.tvList[0].pos
+            if Vector4.Dot(v, normal) <= 0:
+                poly.SetBit(PolyState.BackFace)
 
     def RenderWire(self):
         for poly in self.polyList:
