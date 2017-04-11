@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from graphics.base.Color import Color
-from lib.math.Point import Point
-from utils import log
+from PIL import Image
+import utils.log as log
+from graphics.base import *
+from lib.math3d import *
 
 
 class Rasterizer(object):
@@ -38,10 +39,10 @@ class Rasterizer(object):
                 self.buffer.Set((currX, currY), color)
                 # 检查误差是否超出范围
                 if error >= 0:
-                    error -= dx2    # error = error - 1
+                    error -= dx2  # error = error - 1
                     currY += yInc
 
-                error += dy2    # error = error + dy / dx
+                error += dy2  # error = error + dy / dx
                 currX += xInc
         else:
             error = dx2 - dy
@@ -65,3 +66,54 @@ class Rasterizer(object):
     def SetClipRegion(self, p1, p2):
         self.clipRegion[0] = p1
         self.clipRegion[1] = p2
+
+
+class RenderBuffer(object):
+    DefaultWidth = 800
+    DefaultHeight = 800
+
+    def __init__(self, width=DefaultWidth, height=DefaultHeight, color=Color()):
+        self.width = width
+        self.height = height
+        self.data = [[color for i in range(self.width)] for j in range(self.height)]
+
+    def Get(self, pos):
+        return self.data[pos[0]][pos[1]]
+
+    def Set(self, pos, color):
+        assert isinstance(color, Color), 'The param color is not a instance of Color'
+        if pos[0] < 0 or pos[1] < 0 or pos[0] >= self.width or pos[1] >= self.height:
+            return
+        self.data[pos[0]][pos[1]] = color
+
+    def __str__(self):
+        result = []
+        for line in self.data:
+            for item in line:
+                result.append(str(item))
+                result.append(' ')
+            result.append('\n')
+        return ''.join(result)
+
+
+class RenderInterface(object):
+    def Render(self, buffer):
+        pass
+
+
+class ImageRenderer(RenderInterface):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def Render(self, buffer):
+        image = Image.new('RGBA', (buffer.width, buffer.height))
+        pixels = image.load()
+        for i in range(image.size[0]):
+            for j in range(image.size[1]):
+                pixels[i, j] = buffer.data[i][j].tuple
+
+        image.save(self.filename)
+
+
+class OpenGLRenderer(RenderInterface):
+    pass

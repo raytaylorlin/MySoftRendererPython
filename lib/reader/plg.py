@@ -3,11 +3,9 @@
 
 import parse
 import json
-
-from graphics.base.Poly import Poly
 from utils import log
-from graphics.base.GameObject import GameObject
-from graphics.base.Vertex import Vertex
+from graphics.object import GameObject
+from graphics.base import Vertex, Poly
 
 
 class PLGReader(object):

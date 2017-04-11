@@ -2,6 +2,8 @@
 
 
 class BitMixin(object):
+    """位操作mixin"""
+
     def __init__(self):
         self.state = 0
 

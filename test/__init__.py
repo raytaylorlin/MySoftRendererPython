@@ -6,6 +6,6 @@ from test.draw_cube import *
 
 
 def RunTest():
-    # TestDrawLine()
+    TestDrawLine()
 
     TestDrawCube()

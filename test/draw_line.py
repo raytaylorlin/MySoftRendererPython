@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-from graphics.base.Color import Color
-from graphics.core.Rasterizer import Rasterizer
-from graphics.core.RenderBuffer import RenderBuffer
-from graphics.core.RenderInterface import ImageRenderer
-from lib.math.Point import Point
+from graphics.base import Color
+from graphics.render import Rasterizer, RenderBuffer, ImageRenderer
+from lib.math3d import Point
 
 
 def TestDrawLine():
