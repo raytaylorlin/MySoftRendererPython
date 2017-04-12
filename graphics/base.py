@@ -23,6 +23,11 @@ class Color(object):
         return str((self.r, self.g, self.b, self.a))
 
 
+class ColorDefine(object):
+    Black = Color(0, 0, 0)
+    White = Color(255, 255, 255)
+
+
 class EMaterialShadeMode(IntFlag):
     """材质着色模式"""
 

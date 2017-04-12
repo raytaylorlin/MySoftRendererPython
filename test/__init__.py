@@ -3,9 +3,10 @@
 
 from test.draw_line import *
 from test.draw_cube import *
+from test.draw_uvn_camera_sequence import Main_TestUVNCameraSequence
 
 
 def RunTest():
-    TestDrawLine()
-
-    TestDrawCube()
+    # TestDrawLine()
+    # TestDrawCube()
+    Main_TestUVNCameraSequence()

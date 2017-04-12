@@ -18,3 +18,6 @@ def setup_custom_logger(name):
 
 
 logger = setup_custom_logger('root')
+
+# 启用下面这句以禁用日志
+logging.disable(logging.CRITICAL)

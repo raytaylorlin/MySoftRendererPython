@@ -8,12 +8,20 @@ from graphics.base import Poly, EPolyState
 from graphics.render import RenderBuffer
 
 
+class ECameraType(Enum):
+    Euler = 0
+    UVN = 1
+
+
 class Camera(object):
-    def __init__(self, pos=Vector4(), direction=Vector4(), nearClipZ=0.3, farClipZ=1000,
+    def __init__(self, pos=Vector4(), direction=Vector4(), cameraType=ECameraType.Euler,
+                 lookAt=Vector4(), nearClipZ=0.3, farClipZ=1000,
                  fieldOfView=90, viewportWidth=RenderBuffer.DefaultWidth, viewportHeight=RenderBuffer.DefaultHeight):
         self.pos = pos
         self.direction = direction
         self.u = self.v = self.n = Vector4()
+        self.cameraType = cameraType
+        self.lookAt = lookAt
 
         self.aspectRatio = float(viewportWidth) / viewportHeight
         self.viewPlaneWidth = 2.0
@@ -26,13 +34,36 @@ class Camera(object):
         self.viewportWidth = viewportWidth
         self.viewportHeight = viewportHeight
 
-    def GetEulerMatrix(self):
-        rotate = Matrix4x4.GetRotateMatrix(-self.direction.x, -self.direction.y, -self.direction.z)
-        translate = Matrix4x4([[1, 0, 0, 0],
-                               [0, 1, 0, 0],
-                               [0, 0, 1, 0],
-                               [-self.pos.x, -self.pos.y, -self.pos.z, 1]])
-        result = translate * rotate
+    def GetViewMatrix(self):
+        result = None
+        if self.cameraType == ECameraType.Euler:
+            rotate = Matrix4x4.GetRotateMatrix(-self.direction.x, -self.direction.y, -self.direction.z)
+            translate = Matrix4x4([[1, 0, 0, 0],
+                                   [0, 1, 0, 0],
+                                   [0, 0, 1, 0],
+                                   [-self.pos.x, -self.pos.y, -self.pos.z, 1]])
+            result = translate * rotate
+        elif self.cameraType == ECameraType.UVN:
+            n = self.lookAt - self.pos
+            v = Vector4(0, 1, 0)
+            u = Vector4.Cross(v, n)
+            v = Vector4.Cross(n, u)
+            u.Normalize()
+            v.Normalize()
+            n.Normalize()
+
+            translate = Matrix4x4([[1, 0, 0, 0],
+                                   [0, 1, 0, 0],
+                                   [0, 0, 1, 0],
+                                   [-self.pos.x, -self.pos.y, -self.pos.z, 1]])
+            rotate = Matrix4x4([[u.x, v.x, n.x, 0],
+                                [u.y, v.y, n.y, 0],
+                                [u.z, v.z, n.z, 0],
+                                [0, 0, 0, 1]])
+            result = translate * rotate
+        else:
+            raise Exception('Unknown camera type {}'.format(self.cameraType))
+
         return result
 
 
@@ -148,7 +179,7 @@ class RenderList(object):
         self.rasterizer = rasterizer
         self.polyList = []
 
-    def AddObject(self, obj, insertLocal=True):
+    def AddObject(self, obj, insertLocal=False):
         if not obj.IsEnabled():
             return
         for poly in obj.polyList:
@@ -160,9 +191,12 @@ class RenderList(object):
                 newPoly.AddVertex(i, obj.vListLocal[i] if insertLocal else obj.vListTrans[i])
             self.polyList.append(newPoly)
 
+    def Reset(self):
+        self.polyList.clear()
+
     def TransformWorldToCamera(self, camera):
         """世界坐标变换到相机坐标"""
-        matrix = camera.GetEulerMatrix()
+        matrix = camera.GetViewMatrix()
         for poly in self.polyList:
             if not poly.IsEnabled():
                 continue

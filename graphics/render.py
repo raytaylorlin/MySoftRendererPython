@@ -17,11 +17,10 @@ class Rasterizer(object):
         参考：http://blog.csdn.net/ming1006/article/details/8006769
         """
 
-        assert isinstance(p1, Point)
-        assert isinstance(p2, Point)
-        assert isinstance(color, Color)
+        # assert isinstance(p1, Point)
+        # assert isinstance(p2, Point)
+        # assert isinstance(color, Color)
 
-        log.logger.info('DrawLine: p1 = {0}, p2 = {1}, color = {2}'.format(p1, p2, color))
         currX, currY = p1.x, p1.y
         # 计算步长方向及dx和dy绝对值
         dx, dy = p2.x - p1.x, p2.y - p1.y
@@ -81,10 +80,13 @@ class RenderBuffer(object):
         return self.data[pos[0]][pos[1]]
 
     def Set(self, pos, color):
-        assert isinstance(color, Color), 'The param color is not a instance of Color'
+        # assert isinstance(color, Color), 'The param color is not a instance of Color'
         if pos[0] < 0 or pos[1] < 0 or pos[0] >= self.width or pos[1] >= self.height:
             return
         self.data[pos[0]][pos[1]] = color
+
+    def Clear(self, color=Color()):
+        self.data = [[color for i in range(self.width)] for j in range(self.height)]
 
     def __str__(self):
         result = []
