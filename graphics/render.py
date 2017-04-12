@@ -75,6 +75,8 @@ class RenderBuffer(object):
         self.width = width
         self.height = height
         self.data = [[color for i in range(self.width)] for j in range(self.height)]
+        c = color.tuple
+        self.raw = [c for i in range(self.width) for j in range(self.height)]
 
     def Get(self, pos):
         return self.data[pos[0]][pos[1]]
@@ -84,9 +86,20 @@ class RenderBuffer(object):
         if pos[0] < 0 or pos[1] < 0 or pos[0] >= self.width or pos[1] >= self.height:
             return
         self.data[pos[0]][pos[1]] = color
+        self.raw[pos[1] * self.width + pos[0]] = color.tuple
 
     def Clear(self, color=Color()):
         self.data = [[color for i in range(self.width)] for j in range(self.height)]
+        c = color.tuple
+        self.raw = [c for i in range(self.width) for j in range(self.height)]
+
+    def GetData(self):
+        result = []
+        for y in range(self.height):
+            for x in range(self.width):
+                color = self.data[x][y]
+                result.append((color.r, color.g, color.b, color.a))
+        return result
 
     def __str__(self):
         result = []
@@ -110,9 +123,10 @@ class ImageRenderer(RenderInterface):
     def Render(self, buffer):
         image = Image.new('RGBA', (buffer.width, buffer.height))
         pixels = image.load()
-        for i in range(image.size[0]):
-            for j in range(image.size[1]):
-                pixels[i, j] = buffer.data[i][j].tuple
+        image.putdata(buffer.raw)
+        # for i in range(image.size[0]):
+        #     for j in range(image.size[1]):
+        #         pixels[i, j] = buffer.data[i][j].tuple
 
         image.save(self.filename)
 

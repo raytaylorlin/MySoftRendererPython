@@ -75,7 +75,9 @@ class Poly(BitMixin):
 
     def AddVertex(self, i, v):
         self.vList.append(v)
-        self.tvList.append(copy.deepcopy(v))
+        vCopy = Vertex()
+        vCopy.SetPosition(v.pos)
+        self.tvList.append(vCopy)
         self.vIndexList.append(i)
 
     def GetNormal(self):
@@ -96,9 +98,15 @@ class Vertex(object):
         self.color = Color()
 
     def SetPosition(self, pos):
-        self.pos.x = pos[0]
-        self.pos.y = pos[1]
-        self.pos.z = pos[2]
+        if isinstance(pos, Vector4):
+            self.pos.x = pos.x
+            self.pos.y = pos.y
+            self.pos.z = pos.z
+            self.pos.w = pos.w
+        elif isinstance(pos, tuple) or isinstance(pos, list):
+            self.pos.x = pos[0]
+            self.pos.y = pos[1]
+            self.pos.z = pos[2]
 
     def __str__(self):
         return 'Pos: {0}'.format(self.pos)

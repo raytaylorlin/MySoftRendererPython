@@ -4,7 +4,7 @@ import copy
 import math
 from enum import IntFlag, Enum
 from lib.math3d import *
-from graphics.base import Poly, EPolyState
+from graphics.base import Poly, EPolyState, Vertex
 from graphics.render import RenderBuffer
 
 
@@ -105,7 +105,9 @@ class GameObject(object):
 
     def AddVertex(self, v):
         self.vListLocal.append(v)
-        self.vListTrans.append(copy.deepcopy(v))
+        vCopy = Vertex()
+        vCopy.SetPosition(v.pos)
+        self.vListTrans.append(vCopy)
 
     def AddPoly(self, p):
         self.polyList.append(p)
