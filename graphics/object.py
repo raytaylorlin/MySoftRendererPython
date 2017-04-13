@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import copy
+import utils.log as log
 import math
 from enum import IntFlag, Enum
 from lib.math3d import *
 from graphics.base import Poly, EPolyState, Vertex
 from graphics.render import RenderBuffer
+from utils.mixins import BitMixin
 
 
 class ECameraType(Enum):
@@ -66,6 +67,35 @@ class Camera(object):
 
         return result
 
+    def CullObject(self, obj):
+        """根据相机的变换，剔除掉物体"""
+
+        # 首先将物体的世界坐标变换到相机坐标，再用相机坐标和剪裁面比较
+        matrix = self.GetViewMatrix()
+        spherePos = obj.worldPos * matrix
+        culled = False
+        cullPlane = ''
+
+        # 检测远近剪裁面
+        if spherePos.z - obj.maxRadius > self.farClipZ or spherePos.z + obj.maxRadius < self.nearClipZ:
+            culled = True
+            cullPlane = 'Z'
+        # 用右剪裁面和左剪裁面检测包围球上最左边和最右边的点
+        zTest = 0.5 * self.viewPlaneWidth * spherePos.z / self.viewDist
+        if spherePos.x - obj.maxRadius > zTest or spherePos.x + obj.maxRadius < -zTest:
+            culled = True
+            cullPlane = 'X'
+        # 用上剪裁面和下剪裁面检测包围球上最下边和最上边的点
+        zTest = 0.5 * self.viewPlaneHeight * spherePos.z / self.viewDist
+        if spherePos.y - obj.maxRadius > zTest or spherePos.y + obj.maxRadius < -zTest:
+            culled = True
+            cullPlane = 'Y'
+
+        if culled:
+            obj.SetBit(EGameObjectState.Culled)
+            log.logger.debug('Cull object at pos %s, cull plane = %s', obj.worldPos, cullPlane)
+        return culled
+
 
 # region 游戏物体
 class EGameObjectState(IntFlag):
@@ -84,8 +114,9 @@ class EGameObjectAttribute(IntFlag):
     Textures = 4
 
 
-class GameObject(object):
+class GameObject(BitMixin):
     def __init__(self):
+        super(GameObject, self).__init__()
         self.state = EGameObjectState.Active | EGameObjectState.Visible
         self.attr = EGameObjectAttribute.Null
         self.name = ''
@@ -102,6 +133,10 @@ class GameObject(object):
         return self.state & EGameObjectState.Active and \
                self.state & EGameObjectState.Visible and \
                not self.state & EGameObjectState.Culled
+
+    def Reset(self):
+        self.state = EGameObjectState.Active | EGameObjectState.Visible
+        self.attr = EGameObjectAttribute.Null
 
     def AddVertex(self, v):
         self.vListLocal.append(v)
@@ -127,6 +162,7 @@ class GameObject(object):
             v.pos.x *= scale
             v.pos.y *= scale
             v.pos.z *= scale
+        self.CalculateRadius(transformLocal)
 
     def SetWorldPosition(self, worldPos, transformLocal=False):
         """设置世界坐标"""
@@ -139,17 +175,19 @@ class GameObject(object):
         rotationMatrix = Matrix4x4.GetRotateMatrix(x, y, z)
         self.TransformByMatrix(rotationMatrix)
 
-    def CalculateRadius(self):
+    def CalculateRadius(self, useLocal=False):
         """计算平均半径和最大半径"""
         sumDistance = 0
         maxDistance = 0
-        for v in self.vListLocal:
-            d = v.pos.sqrMagnitude()
+        vList = self.vListLocal if useLocal else self.vListTrans
+        for v in vList:
+            d = v.pos.sqrMagnitude
             sumDistance += d
             if d > maxDistance:
                 maxDistance = d
-        self.averageRadius = sumDistance / len(self.vListLocal)
+        self.averageRadius = sumDistance / len(vList)
         self.maxRadius = maxDistance
+        log.logger.debug('Average radius = %f, max radius = %f', self.averageRadius, self.maxRadius)
 
     def TransformModelToWorld(self, transformLocal=False):
         """模型坐标变换到世界坐标"""
@@ -212,9 +250,15 @@ class RenderList(object):
                 continue
 
             for vertex in poly.tvList:
+                tempX = vertex.pos.x
+                tempY = vertex.pos.y
+
                 z = vertex.pos.z
                 vertex.pos.x = camera.viewDist * vertex.pos.x / z
                 vertex.pos.y = camera.viewDist * vertex.pos.y * camera.aspectRatio / z
+                # if vertex.pos.x < -1 or vertex.pos.x > 1 or vertex.pos.y < -1 or vertex.pos.y > 1:
+                #     a = 0
+                #     print(vertex)
 
     def TransformPerspectiveToScreen(self, camera):
         """透视坐标变换到屏幕坐标"""

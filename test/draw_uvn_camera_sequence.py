@@ -9,28 +9,26 @@ from graphics.render import Rasterizer, ImageRenderer
 from lib.reader.plg import PLGReader
 
 outputDir = 'output/uvn_camera_result'
-numObjects = 4
-objectSpacing = 250
+numObjects = 8
+objectSpacing = 500
 
 
 def Main_TestUVNCameraSequence():
     # 创建输出目录
-
     if not os.path.exists(outputDir):
         os.mkdir(outputDir)
 
     camera, objModel, buffer, renderList = Init()
 
     for angle in range(0, 360, 10):
-        print('Rendering angle={}...'.format(angle))
+        log.logger.info('Rendering angle={}...'.format(angle))
         RenderOneFrame(camera, objModel, buffer, renderList, angle)
 
 
 def Init():
     """初始化一些固定物体并返回"""
-    camera = Camera(cameraType=ECameraType.UVN)
+    camera = Camera(cameraType=ECameraType.UVN, nearClipZ=50, farClipZ=8000)
     objModel = PLGReader('res/tank.plg').LoadObject()
-    # objModel.SetTransform(scale=5)
     objModel.SetTransform()
     buffer = RenderBuffer(color=ColorDefine.White)
     renderList = RenderList(Rasterizer(buffer))
@@ -58,16 +56,15 @@ def SetCameraParams(camera, angle):
 
 def AddObjectBatch(objModel, renderList, camera):
     """根据原模型批量添加到渲染列表中，并根据相机参数剔除物体"""
-
     renderList.Reset()
-    # renderList.AddObject(objModel)
-
     for x in range(-numObjects // 2, numObjects // 2):
         for z in range(-numObjects // 2, numObjects // 2):
             pos = Vector4(x * objectSpacing + objectSpacing // 2, 0, z * objectSpacing + objectSpacing // 2)
+            objModel.Reset()
             objModel.SetWorldPosition(pos, transformLocal=True)
-            # TODO 判断剔除物体
-            renderList.AddObject(objModel)
+            # 剔除物体
+            if not camera.CullObject(objModel):
+                renderList.AddObject(objModel)
 
 
 def TransformRenderList(renderList, camera):
