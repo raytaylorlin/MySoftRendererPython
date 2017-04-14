@@ -196,5 +196,12 @@ class Vector4(object):
         return Vector4(u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x)
 
 
-"""简单2D点定义"""
-Point = namedtuple('Point', ['x', 'y'])
+class Point(object):
+    """简单2D点定义"""
+
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return str((self.x, self.y))
