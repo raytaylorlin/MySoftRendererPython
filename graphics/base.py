@@ -19,6 +19,21 @@ class Color(object):
     def tuple(self):
         return self.r, self.g, self.b, self.a
 
+    @staticmethod
+    def Multiply(result, color1, color2):
+        r = color1.r * color2.r // 256
+        g = color1.g * color2.g // 256
+        b = color1.b * color2.b // 256
+        result.r = min(result.r + r, 255)
+        result.g = min(result.g + g, 255)
+        result.b = min(result.b + b, 255)
+
+    def __mul__(self, other):
+        self.r *= other
+        self.g *= other
+        self.b *= other
+        return Color(self.r, self.g, self.b, self.a)
+
     def __str__(self):
         return str((self.r, self.g, self.b, self.a))
 
@@ -48,9 +63,12 @@ class Material(object):
     """材质"""
 
     def __init__(self):
-        self.attr = EMaterialShadeMode.Null
-        self.color = Color()
+        self.attr = EMaterialShadeMode.Flat
+        self.color = ColorDefine.White
         self.ka = self.kd = self.ks = 0.0
+
+    def CanBeShaded(self):
+        return self.attr != EMaterialShadeMode.Null
 
 
 class EPolyState(IntFlag):
@@ -91,6 +109,7 @@ class Poly(BitMixin):
             v01 = self.tvList[1].pos - self.tvList[0].pos
             v02 = self.tvList[2].pos - self.tvList[0].pos
             self.normal = Vector4.Cross(v01, v02)
+            self.normal.Normalize()
         return self.normal
 
 

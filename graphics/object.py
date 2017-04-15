@@ -3,9 +3,11 @@
 import utils.log as log
 import math
 from enum import IntFlag, Enum
+
 from lib.math3d import *
-from graphics.base import Poly, EPolyState, Vertex
+from graphics.base import Poly, EPolyState, Vertex, Color
 from graphics.render import RenderBuffer
+from graphics.lighting import *
 from utils.mixins import BitMixin
 
 
@@ -71,6 +73,7 @@ class Camera(object):
         """根据相机的变换，剔除掉物体"""
 
         # 首先将物体的世界坐标变换到相机坐标，再用相机坐标和剪裁面比较
+
         matrix = self.GetViewMatrix()
         spherePos = obj.worldPos * matrix
         culled = False
@@ -121,6 +124,9 @@ class GameObject(BitMixin):
         self.attr = EGameObjectAttribute.Null
         self.name = ''
         self.worldPos = Vector4()
+        self.rotation = Vector4()
+        self.scale = 1
+
         self.vListLocal = []
         self.vListTrans = []
         self.polyList = []
@@ -149,51 +155,61 @@ class GameObject(BitMixin):
 
     def SetTransform(self, scale=1, eulerRotation=(0, 0, 0), worldPos=Vector4()):
         """设置基本变换"""
-
-        # 先缩放，再旋转，后平移
-        self.Scale(scale)
+        self.SetScale(scale)
         self.SetEulerRotation(eulerRotation[0], eulerRotation[1], eulerRotation[2])
         self.SetWorldPosition(worldPos)
 
-    def Scale(self, scale, transformLocal=False):
+    def SetScale(self, scale, transformLocal=False):
         """仅缩放局部坐标，最好在加载完物体之后调用"""
-        vList = self.vListLocal if transformLocal else self.vListTrans
-        for v in vList:
-            v.pos.x *= scale
-            v.pos.y *= scale
-            v.pos.z *= scale
-        self.CalculateRadius(transformLocal)
+        self.scale = scale
+        # vList = self.vListLocal if transformLocal else self.vListTrans
+        # for v in vList:
+        #     v.pos.x *= scale
+        #     v.pos.y *= scale
+        #     v.pos.z *= scale
+        # self.CalculateRadius()
 
     def SetWorldPosition(self, worldPos, transformLocal=False):
         """设置世界坐标"""
         assert isinstance(worldPos, Vector4)
         self.worldPos = worldPos
-        self.TransformModelToWorld(transformLocal)
+        # self.TransformModelToWorld(transformLocal)
 
     def SetEulerRotation(self, x=0, y=0, z=0, transformLocal=False):
         """设置旋转（使用欧拉角）"""
-        rotationMatrix = Matrix4x4.GetRotateMatrix(x, y, z)
-        self.TransformByMatrix(rotationMatrix)
+        self.rotation = Vector4(x, y, z)
+        # rotationMatrix = Matrix4x4.GetRotateMatrix(x, y, z)
+        # self.TransformByMatrix(rotationMatrix)
 
-    def CalculateRadius(self, useLocal=False):
+    def CalculateRadius(self):
         """计算平均半径和最大半径"""
         sumDistance = 0
         maxDistance = 0
-        vList = self.vListLocal if useLocal else self.vListTrans
-        for v in vList:
-            d = v.pos.sqrMagnitude
+        # vList = self.vListLocal if useLocal else self.vListTrans
+        for v in self.vListLocal:
+            scaleVector = v.pos * self.scale
+            d = scaleVector.sqrMagnitude
             sumDistance += d
             if d > maxDistance:
                 maxDistance = d
-        self.averageRadius = sumDistance / len(vList)
+        self.averageRadius = sumDistance / len(self.vListLocal)
         self.maxRadius = maxDistance
         log.logger.debug('Average radius = %f, max radius = %f', self.averageRadius, self.maxRadius)
 
-    def TransformModelToWorld(self, transformLocal=False):
+    def TransformModelToWorld(self):
         """模型坐标变换到世界坐标"""
-        vSourceList = self.vListLocal if transformLocal else self.vListTrans
-        for i in range(len(vSourceList)):
-            self.vListTrans[i].pos = self.worldPos + vSourceList[i].pos
+        # vSourceList = self.vListLocal if transformLocal else self.vListTrans
+        for i in range(len(self.vListLocal)):
+            # 缩放
+            vScale = self.vListLocal[i].pos * self.scale
+            # 旋转
+            rotationMatrix = Matrix4x4.GetRotateMatrix(self.rotation.x, self.rotation.y, self.rotation.z)
+            vRotation = vScale * rotationMatrix
+            # 平移
+            vTranslate = self.worldPos + vRotation
+
+            self.vListTrans[i].pos = vTranslate
+            log.logger.debug('world pos = {}, vListTrans[i].pos = {}'.format(self.worldPos, self.vListTrans[i].pos))
 
     def TransformByMatrix(self, matrix, transformLocal=False):
         """使用一个矩阵来变换坐标"""
@@ -209,19 +225,23 @@ class GameObject(BitMixin):
 
 # region 渲染列表
 class ESortPolyMethod(Enum):
-    AverageZ = 0
-    NearZ = 1
-    FarZ = 2
+    Null = 0
+    AverageZ = 1
+    NearZ = 2
+    FarZ = 3
 
 
 class RenderList(object):
-    def __init__(self, rasterizer):
+    def __init__(self, rasterizer, sortPolyMethod=ESortPolyMethod.AverageZ):
         self.rasterizer = rasterizer
         self.polyList = []
 
     def AddObject(self, obj, insertLocal=False):
         if not obj.IsEnabled():
             return
+
+        obj.TransformModelToWorld()
+
         for poly in obj.polyList:
             if not poly.IsEnabled():
                 continue
@@ -242,6 +262,7 @@ class RenderList(object):
                 continue
             for vertex in poly.tvList:
                 vertex.pos = vertex.pos * matrix
+                log.logger.debug('[TransformWorldToCamera] vertex.pos = {}'.format(vertex.pos))
 
     def TransformCameraToPerspective(self, camera):
         """相机坐标变换到透视坐标"""
@@ -256,9 +277,9 @@ class RenderList(object):
                 z = vertex.pos.z
                 vertex.pos.x = camera.viewDist * vertex.pos.x / z
                 vertex.pos.y = camera.viewDist * vertex.pos.y * camera.aspectRatio / z
-                # if vertex.pos.x < -1 or vertex.pos.x > 1 or vertex.pos.y < -1 or vertex.pos.y > 1:
-                #     a = 0
-                #     print(vertex)
+                if vertex.pos.x < -1 or vertex.pos.x > 1 or vertex.pos.y < -1 or vertex.pos.y > 1:
+                    a = 0
+                    print(vertex)
 
     def TransformPerspectiveToScreen(self, camera):
         """透视坐标变换到屏幕坐标"""
@@ -285,6 +306,7 @@ class RenderList(object):
                 poly.SetBit(EPolyState.BackFace)
 
     def RenderWire(self):
+        """渲染线框"""
         for poly in self.polyList:
             if not poly.IsEnabled():
                 continue
@@ -301,5 +323,26 @@ class RenderList(object):
             self.rasterizer.DrawLine(Point(round(v2.x), round(v2.y)),
                                      Point(round(v0.x), round(v0.y)),
                                      poly.material.color)
+
+    def CalculateLighting(self, lightList):
+        """计算光照"""
+        for poly in self.polyList:
+            if (not poly.IsEnabled()) or (not poly.material.CanBeShaded()):
+                continue
+
+            resultColor = Color()
+            for light in lightList:
+                    light.Calculate(resultColor, poly)
+            poly.material.color = resultColor
+
+    def RenderSolid(self):
+        for poly in self.polyList:
+            if not poly.IsEnabled():
+                continue
+
+            v0 = poly.tvList[0].pos
+            v1 = poly.tvList[1].pos
+            v2 = poly.tvList[2].pos
+            self.rasterizer.DrawTriangle(Point(v0.x, v0.y), Point(v1.x, v1.y), Point(v2.x, v2.y), poly.material.color)
 
 # endregion

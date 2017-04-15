@@ -15,7 +15,7 @@ def DrawCube(filename, removeBackFace):
     camera = Camera(direction=Vector4(0, 0, 0), pos=Vector4(0, 50, 0))
 
     obj = PLGReader('res/cube.plg').LoadObject()
-    obj.SetTransform(scale=5, eulerRotation=(0, 22.5, 0), worldPos=Vector4(0, 0, 100))
+    obj.SetTransform(scale=5, eulerRotation=(0, 0, 0), worldPos=Vector4(0, 0, 100))
 
     buffer = RenderBuffer(color=Color(255, 255, 255))
     renderList = RenderList(Rasterizer(buffer))

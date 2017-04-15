@@ -150,6 +150,8 @@ class Vector4(object):
         return self.x, self.y, self.z, self.w
 
     def Normalize(self):
+        if self.x == 0 and self.y == 0 and self.z == 0:
+            return
         mag = self.sqrMagnitude
         self.x /= mag
         self.y /= mag
@@ -165,7 +167,7 @@ class Vector4(object):
         return Vector4(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __mul__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, int) or isinstance(other, float):
             return Vector4(self.x * other, self.y * other, self.z * other)
         if isinstance(other, Vector4):
             s = 0
