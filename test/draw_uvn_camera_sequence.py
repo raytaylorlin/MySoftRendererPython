@@ -29,7 +29,7 @@ def Init():
     """初始化一些固定物体并返回"""
     camera = Camera(cameraType=ECameraType.UVN, nearClipZ=50, farClipZ=8000)
     objModel = PLGReader('res/tank.plg').LoadObject()
-    objModel.SetTransform()
+    objModel.material.color = ColorDefine.Black
     buffer = RenderBuffer(color=ColorDefine.White)
     renderList = RenderList(Rasterizer(buffer))
     return camera, objModel, buffer, renderList

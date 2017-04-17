@@ -10,7 +10,7 @@ from test.base_lighting import Main_TestBaseLighting
 
 def RunTest():
     # TestDrawLine()
-    TestDrawCube()
+    # TestDrawCube()
     # Main_TestUVNCameraSequence()
     # Main_TestDrawTriangle()
-    # Main_TestBaseLighting()
+    Main_TestBaseLighting()

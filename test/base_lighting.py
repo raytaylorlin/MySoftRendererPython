@@ -11,7 +11,7 @@ from lib.reader.plg import PLGReader
 
 outputDir = 'output/base_lighting'
 numObjects = 4
-objectSpacing = 200
+objectSpacing = 100
 
 
 def Main_TestBaseLighting():
@@ -27,16 +27,26 @@ def Main_TestBaseLighting():
     lightList.append(AmbientLight(Color(72, 61, 139)))
     RenderOneFrame(camera, objModel, buffer, renderList, lightList, name)
 
-    # log.logger.info('Rendering with ambient light and directional light...')
-    # name = 'lighting_a_d'
-    # lightList.append(DirectionalLight(Color(108, 166, 205)))
-    # RenderOneFrame(camera, objModel, buffer, renderList, lightList, name)
+    log.logger.info('Rendering with ambient light and directional light...')
+    name = 'lighting_a_d'
+    lightList.append(DirectionalLight(Color(108, 166, 205), direction=Vector4(-1, 1, -0.5)))
+    RenderOneFrame(camera, objModel, buffer, renderList, lightList, name)
+
+    log.logger.info('Rendering with ambient light and 2 directional light...')
+    name = 'lighting_a_d_d'
+    lightList.append(DirectionalLight(Color(200, 200, 200), direction=Vector4(1, 1, 0.5)))
+    RenderOneFrame(camera, objModel, buffer, renderList, lightList, name)
+
+    log.logger.info('Rendering with ambient light, point light and 2 directional light...')
+    name = 'lighting_a_d_d_p'
+    lightList.append(PointLight(Color(205, 79, 57), pos=Vector4(0, 500, 0), params=(1, 0.0005, 0)))
+    RenderOneFrame(camera, objModel, buffer, renderList, lightList, name)
 
 
 def Init():
     """初始化一些固定物体并返回"""
-    # camera = Camera(cameraType=ECameraType.UVN, pos=Vector4(0, 80, -50), nearClipZ=50, farClipZ=8000)
-    camera = Camera(cameraType=ECameraType.Euler, pos=Vector4(0, 0, -100), nearClipZ=50, farClipZ=8000)
+    # camera = Camera(cameraType=ECameraType.UVN, pos=Vector4(0, 380, -350), nearClipZ=50, farClipZ=8000)
+    camera = Camera(cameraType=ECameraType.Euler, pos=Vector4(0, 120, -50), direction=Vector4(45, 0, 0), nearClipZ=50, farClipZ=8000)
     objModel = PLGReader('res/cube.plg').LoadObject()
     objModel.SetTransform(scale=5)
     buffer = RenderBuffer(color=ColorDefine.Black)
@@ -51,9 +61,9 @@ def RenderOneFrame(camera, objModel, buffer, renderList, lightList, filename):
     buffer.Clear(color=ColorDefine.Black)
     AddObjectBatch(objModel, renderList, camera)
     TransformRenderList(renderList, camera)
-    # renderList.CalculateLighting(lightList)
-    # renderList.RenderSolid()
-    renderList.RenderWire()
+    renderList.CalculateLighting(lightList)
+    renderList.RenderSolid()
+    # renderList.RenderWire()
     Output(buffer, filename)
 
 
@@ -62,14 +72,10 @@ def AddObjectBatch(objModel, renderList, camera):
     renderList.Reset()
     for x in range(-numObjects // 2, numObjects // 2):
         for z in range(-numObjects // 2, numObjects // 2):
-            if x == -1 and z == -1:
-                continue
-            if x == 0 and z == -1:
-                continue
-
             pos = Vector4(x * objectSpacing + objectSpacing // 2, 0, z * objectSpacing + objectSpacing // 2)
             objModel.Reset()
             objModel.SetWorldPosition(pos)
+            log.logger.debug('obj world pos = {}'.format(pos))
             # 剔除物体
             if not camera.CullObject(objModel):
                 renderList.AddObject(objModel)
@@ -80,6 +86,7 @@ def AddObjectBatch(objModel, renderList, camera):
 
 
 def TransformRenderList(renderList, camera):
+    renderList.CheckBackFace(camera)
     renderList.TransformWorldToCamera(camera)
     renderList.TransformCameraToPerspective(camera)
     renderList.TransformPerspectiveToScreen(camera)

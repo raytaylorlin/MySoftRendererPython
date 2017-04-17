@@ -235,7 +235,7 @@ class RenderList(object):
             if not poly.IsEnabled():
                 continue
 
-            newPoly = Poly(obj.material)
+            newPoly = Poly()
             for i in poly.vIndexList:
                 newPoly.AddVertex(i, obj.vListTrans[i])
             self.polyList.append(newPoly)
@@ -319,8 +319,10 @@ class RenderList(object):
                 continue
 
             resultColor = Color()
+            log.logger.debug('Start color: {}'.format(resultColor))
             for light in lightList:
                 light.Calculate(resultColor, poly)
+
             poly.material.color = resultColor
 
     def RenderSolid(self):

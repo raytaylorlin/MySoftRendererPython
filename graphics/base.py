@@ -29,10 +29,10 @@ class Color(object):
         result.b = min(result.b + b, 255)
 
     def __mul__(self, other):
-        self.r *= other
-        self.g *= other
-        self.b *= other
-        return Color(self.r, self.g, self.b, self.a)
+        tempR = int(self.r * other)
+        tempG = int(self.g * other)
+        tempB = int(self.b * other)
+        return Color(tempR, tempG, tempB, self.a)
 
     def __str__(self):
         return str((self.r, self.g, self.b, self.a))
@@ -83,10 +83,10 @@ class EPolyState(IntFlag):
 class Poly(BitMixin):
     """多边形"""
 
-    def __init__(self, material=Material()):
+    def __init__(self, material=None):
         super(Poly, self).__init__()
         self.state = EPolyState.Active
-        self.material = material
+        self.material = material or Material()
         self.vList = []
         self.tvList = []
         self.vIndexList = []

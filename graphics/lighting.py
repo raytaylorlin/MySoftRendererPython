@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
+
+import utils.log as log
 from graphics.base import Color
 from lib.math3d import Vector4
 
 
 class Light(object):
-    def __init__(self, color=Color()):
+    def __init__(self, color=None):
         self.isOn = True
-        self.color = color
+        self.color = color or Color()
 
     def Calculate(self, resultColor, poly):
-        return self.color
+        log.logger.debug(
+            'Result color: {}, light color: {}, poly color: {}'.format(resultColor, self.color, poly.material.color))
 
     def Turn(self, isOn):
         self.isOn = isOn
@@ -17,18 +20,21 @@ class Light(object):
 
 class AmbientLight(Light):
     """环境光"""
-    def __init__(self, color=Color()):
+
+    def __init__(self, color=None):
         super(AmbientLight, self).__init__(color)
 
     def Calculate(self, resultColor, poly):
         Color.Multiply(resultColor, self.color, poly.material.color)
+        super(AmbientLight, self).Calculate(resultColor, poly)
 
 
 class DirectionalLight(Light):
     """方向光"""
-    def __init__(self, color=Color(), direction=Vector4()):
+
+    def __init__(self, color=None, direction=None):
         super(DirectionalLight, self).__init__(color)
-        self.direction = direction
+        self.direction = direction or Vector4()
         self.direction.Normalize()
 
     def Calculate(self, resultColor, poly):
@@ -39,18 +45,34 @@ class DirectionalLight(Light):
         n = poly.GetNormal()
         dp = Vector4.Dot(n, self.direction)
         if dp > 0:
-            Color.Multiply(resultColor, self.color * dp, poly.material.color)
+            i = dp
+            Color.Multiply(resultColor, self.color * i, poly.material.color)
+            super(DirectionalLight, self).Calculate(resultColor, poly)
 
-        return self.color
 
-
-class PointColor(Light):
+class PointLight(Light):
     """点光源"""
-    def __init__(self, color=Color(), pos=Vector4(), params=(1, 0, 0)):
-        super(PointColor, self).__init__(color)
-        self.pos = pos
+
+    def __init__(self, color=None, pos=None, params=(1, 0, 0)):
+        super(PointLight, self).__init__(color)
+        self.pos = pos or Vector4()
         assert isinstance(params, tuple)
+        # 二次衰减项系数（分别对应常数，一次项，二次项）
         self.params = params
 
-    def Calculate(self, result, base):
-        return self.color
+    def Calculate(self, resultColor, poly):
+        # 点光源计算模型：
+        #              I0point * Clpoint
+        #  I(d)point = ___________________
+        #              kc +  kl*d + kq*d2
+        #
+        #  d = |p - s|
+        n = poly.GetNormal()
+        l = self.pos - poly.tvList[0].pos
+        dist = l.sqrMagnitude
+        dp = Vector4.Dot(n, l)
+        if dp > 0:
+            a = self.params[0] + self.params[1] * dist + self.params[2] * dist * dist
+            i = dp / dist / a
+            Color.Multiply(resultColor, self.color * i, poly.material.color)
+            super(PointLight, self).Calculate(resultColor, poly)
