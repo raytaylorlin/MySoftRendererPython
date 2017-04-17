@@ -5,7 +5,7 @@ import math
 from enum import IntFlag, Enum
 
 from lib.math3d import *
-from graphics.base import Poly, EPolyState, Vertex, Color
+from graphics.base import Poly, EPolyState, Vertex, Color, Material
 from graphics.render import RenderBuffer
 from graphics.lighting import *
 from utils.mixins import BitMixin
@@ -130,6 +130,7 @@ class GameObject(BitMixin):
         self.vListLocal = []
         self.vListTrans = []
         self.polyList = []
+        self.material = Material()
 
         # 平均半径和最大半径
         self.averageRadius = 0
@@ -159,33 +160,22 @@ class GameObject(BitMixin):
         self.SetEulerRotation(eulerRotation[0], eulerRotation[1], eulerRotation[2])
         self.SetWorldPosition(worldPos)
 
-    def SetScale(self, scale, transformLocal=False):
+    def SetScale(self, scale):
         """仅缩放局部坐标，最好在加载完物体之后调用"""
         self.scale = scale
-        # vList = self.vListLocal if transformLocal else self.vListTrans
-        # for v in vList:
-        #     v.pos.x *= scale
-        #     v.pos.y *= scale
-        #     v.pos.z *= scale
-        # self.CalculateRadius()
 
-    def SetWorldPosition(self, worldPos, transformLocal=False):
+    def SetWorldPosition(self, worldPos):
         """设置世界坐标"""
-        assert isinstance(worldPos, Vector4)
         self.worldPos = worldPos
-        # self.TransformModelToWorld(transformLocal)
 
-    def SetEulerRotation(self, x=0, y=0, z=0, transformLocal=False):
+    def SetEulerRotation(self, x=0, y=0, z=0):
         """设置旋转（使用欧拉角）"""
         self.rotation = Vector4(x, y, z)
-        # rotationMatrix = Matrix4x4.GetRotateMatrix(x, y, z)
-        # self.TransformByMatrix(rotationMatrix)
 
     def CalculateRadius(self):
         """计算平均半径和最大半径"""
         sumDistance = 0
         maxDistance = 0
-        # vList = self.vListLocal if useLocal else self.vListTrans
         for v in self.vListLocal:
             scaleVector = v.pos * self.scale
             d = scaleVector.sqrMagnitude
@@ -194,11 +184,10 @@ class GameObject(BitMixin):
                 maxDistance = d
         self.averageRadius = sumDistance / len(self.vListLocal)
         self.maxRadius = maxDistance
-        log.logger.debug('Average radius = %f, max radius = %f', self.averageRadius, self.maxRadius)
+        log.logger.debug('Average radius = {}, max radius = {}'.format(self.averageRadius, self.maxRadius))
 
     def TransformModelToWorld(self):
         """模型坐标变换到世界坐标"""
-        # vSourceList = self.vListLocal if transformLocal else self.vListTrans
         for i in range(len(self.vListLocal)):
             # 缩放
             vScale = self.vListLocal[i].pos * self.scale
@@ -236,7 +225,7 @@ class RenderList(object):
         self.rasterizer = rasterizer
         self.polyList = []
 
-    def AddObject(self, obj, insertLocal=False):
+    def AddObject(self, obj):
         if not obj.IsEnabled():
             return
 
@@ -246,9 +235,9 @@ class RenderList(object):
             if not poly.IsEnabled():
                 continue
 
-            newPoly = Poly()
+            newPoly = Poly(obj.material)
             for i in poly.vIndexList:
-                newPoly.AddVertex(i, obj.vListLocal[i] if insertLocal else obj.vListTrans[i])
+                newPoly.AddVertex(i, obj.vListTrans[i])
             self.polyList.append(newPoly)
 
     def Reset(self):
@@ -262,7 +251,7 @@ class RenderList(object):
                 continue
             for vertex in poly.tvList:
                 vertex.pos = vertex.pos * matrix
-                log.logger.debug('[TransformWorldToCamera] vertex.pos = {}'.format(vertex.pos))
+                log.logger.debug('Vertex.pos = {}'.format(vertex.pos))
 
     def TransformCameraToPerspective(self, camera):
         """相机坐标变换到透视坐标"""
@@ -278,8 +267,7 @@ class RenderList(object):
                 vertex.pos.x = camera.viewDist * vertex.pos.x / z
                 vertex.pos.y = camera.viewDist * vertex.pos.y * camera.aspectRatio / z
                 if vertex.pos.x < -1 or vertex.pos.x > 1 or vertex.pos.y < -1 or vertex.pos.y > 1:
-                    a = 0
-                    print(vertex)
+                    log.logger.debug('Vertex pos {} out of uniform coord'.format(vertex))
 
     def TransformPerspectiveToScreen(self, camera):
         """透视坐标变换到屏幕坐标"""
@@ -332,7 +320,7 @@ class RenderList(object):
 
             resultColor = Color()
             for light in lightList:
-                    light.Calculate(resultColor, poly)
+                light.Calculate(resultColor, poly)
             poly.material.color = resultColor
 
     def RenderSolid(self):

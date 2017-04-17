@@ -83,10 +83,10 @@ class EPolyState(IntFlag):
 class Poly(BitMixin):
     """多边形"""
 
-    def __init__(self):
+    def __init__(self, material=Material()):
         super(Poly, self).__init__()
         self.state = EPolyState.Active
-        self.material = Material()
+        self.material = material
         self.vList = []
         self.tvList = []
         self.vIndexList = []

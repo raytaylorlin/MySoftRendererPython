@@ -7,7 +7,7 @@ LOG_FILENAME = 'log.log'
 
 
 def setup_custom_logger(name):
-    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s %(funcName)s():%(lineno)d - %(message)s')
 
     fileHandler = logging.FileHandler(LOG_FILENAME, mode='w')
     fileHandler.setFormatter(formatter)

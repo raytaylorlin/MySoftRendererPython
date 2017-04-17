@@ -10,8 +10,8 @@ from graphics.render import Rasterizer, ImageRenderer
 from lib.reader.plg import PLGReader
 
 outputDir = 'output/base_lighting'
-numObjects = 2
-objectSpacing = 170
+numObjects = 4
+objectSpacing = 200
 
 
 def Main_TestBaseLighting():
@@ -69,8 +69,7 @@ def AddObjectBatch(objModel, renderList, camera):
 
             pos = Vector4(x * objectSpacing + objectSpacing // 2, 0, z * objectSpacing + objectSpacing // 2)
             objModel.Reset()
-            objModel.SetWorldPosition(pos, transformLocal=True)
-            print(objModel.worldPos)
+            objModel.SetWorldPosition(pos)
             # 剔除物体
             if not camera.CullObject(objModel):
                 renderList.AddObject(objModel)
