@@ -223,6 +223,7 @@ class ESortPolyMethod(Enum):
 class RenderList(object):
     def __init__(self, rasterizer, sortPolyMethod=ESortPolyMethod.AverageZ):
         self.rasterizer = rasterizer
+        self.sortPolyMethod = sortPolyMethod
         self.polyList = []
 
     def AddObject(self, obj):
@@ -292,6 +293,14 @@ class RenderList(object):
             v = camera.pos - poly.tvList[0].pos
             if Vector4.Dot(v, normal) <= 0:
                 poly.SetBit(EPolyState.BackFace)
+
+    def Sort(self):
+        if self.sortPolyMethod == ESortPolyMethod.AverageZ:
+            self.polyList.sort(key=lambda p: (p.tvList[0].pos.z + p.tvList[1].pos.z + p.tvList[2].pos.z) / 3, reverse=True)
+        elif self.sortPolyMethod == ESortPolyMethod.NearZ:
+            self.polyList.sort(key=lambda p: min(p.tvList[0].pos.z, p.tvList[1].pos.z, p.tvList[2].pos.z), reverse=True)
+        elif self.sortPolyMethod == ESortPolyMethod.FarZ:
+            self.polyList.sort(key=lambda p: max(p.tvList[0].pos.z, p.tvList[1].pos.z, p.tvList[2].pos.z), reverse=True)
 
     def RenderWire(self):
         """渲染线框"""

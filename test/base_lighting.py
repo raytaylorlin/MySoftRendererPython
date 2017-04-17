@@ -45,8 +45,7 @@ def Main_TestBaseLighting():
 
 def Init():
     """初始化一些固定物体并返回"""
-    # camera = Camera(cameraType=ECameraType.UVN, pos=Vector4(0, 380, -350), nearClipZ=50, farClipZ=8000)
-    camera = Camera(cameraType=ECameraType.Euler, pos=Vector4(0, 120, -50), direction=Vector4(45, 0, 0), nearClipZ=50, farClipZ=8000)
+    camera = Camera(cameraType=ECameraType.UVN, pos=Vector4(0, 200, -150), nearClipZ=50, farClipZ=8000)
     objModel = PLGReader('res/cube.plg').LoadObject()
     objModel.SetTransform(scale=5)
     buffer = RenderBuffer(color=ColorDefine.Black)
@@ -60,8 +59,8 @@ def Init():
 def RenderOneFrame(camera, objModel, buffer, renderList, lightList, filename):
     buffer.Clear(color=ColorDefine.Black)
     AddObjectBatch(objModel, renderList, camera)
-    TransformRenderList(renderList, camera)
-    renderList.CalculateLighting(lightList)
+    TransformRenderList(renderList, camera, lightList)
+
     renderList.RenderSolid()
     # renderList.RenderWire()
     Output(buffer, filename)
@@ -79,17 +78,15 @@ def AddObjectBatch(objModel, renderList, camera):
             # 剔除物体
             if not camera.CullObject(objModel):
                 renderList.AddObject(objModel)
-    # objModel.SetWorldPosition(Vector4(-85, 0, 85))
-    # renderList.AddObject(objModel)
-    # objModel.SetWorldPosition(Vector4(85, 0, 85))
-    # renderList.AddObject(objModel)
 
 
-def TransformRenderList(renderList, camera):
+def TransformRenderList(renderList, camera, lightList):
     renderList.CheckBackFace(camera)
     renderList.TransformWorldToCamera(camera)
+    renderList.Sort()
     renderList.TransformCameraToPerspective(camera)
     renderList.TransformPerspectiveToScreen(camera)
+    renderList.CalculateLighting(lightList)
 
 
 def Output(buffer, filename):
