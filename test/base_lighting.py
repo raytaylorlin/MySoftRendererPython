@@ -48,6 +48,7 @@ def Init():
     camera = Camera(cameraType=ECameraType.UVN, pos=Vector4(0, 200, -150), nearClipZ=50, farClipZ=8000)
     objModel = PLGReader('res/cube.plg').LoadObject()
     objModel.SetTransform(scale=5)
+    objModel.material.color = ColorDefine.White
     buffer = RenderBuffer(color=ColorDefine.Black)
 
     # 相机空间排序（可以设置为ESortPolyMethod.Null看看不正常的效果）

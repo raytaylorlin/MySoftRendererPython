@@ -17,11 +17,11 @@ class ECameraType(Enum):
 
 
 class Camera(object):
-    def __init__(self, pos=Vector4(), direction=Vector4(), cameraType=ECameraType.Euler,
+    def __init__(self, pos=None, direction=None, cameraType=ECameraType.Euler,
                  lookAt=Vector4(), nearClipZ=0.3, farClipZ=1000,
                  fieldOfView=90, viewportWidth=RenderBuffer.DefaultWidth, viewportHeight=RenderBuffer.DefaultHeight):
-        self.pos = pos
-        self.direction = direction
+        self.pos = pos or Vector4()
+        self.direction = direction or Vector4()
         self.u = self.v = self.n = Vector4()
         self.cameraType = cameraType
         self.lookAt = lookAt
@@ -236,7 +236,8 @@ class RenderList(object):
             if not poly.IsEnabled():
                 continue
 
-            newPoly = Poly()
+            newPoly = Poly(obj.material)
+            # newPoly = poly.Clone(obj.vListTrans)
             for i in poly.vIndexList:
                 newPoly.AddVertex(i, obj.vListTrans[i])
             self.polyList.append(newPoly)
@@ -332,7 +333,10 @@ class RenderList(object):
             for light in lightList:
                 light.Calculate(resultColor, poly)
 
-            poly.material.color = resultColor
+            # 给顶点着色
+            for v in poly.tvList:
+                v.color = resultColor
+            # poly.material.color = resultColor
 
     def RenderSolid(self):
         for poly in self.polyList:
@@ -342,6 +346,6 @@ class RenderList(object):
             v0 = poly.tvList[0].pos
             v1 = poly.tvList[1].pos
             v2 = poly.tvList[2].pos
-            self.rasterizer.DrawTriangle(Point(v0.x, v0.y), Point(v1.x, v1.y), Point(v2.x, v2.y), poly.material.color)
+            self.rasterizer.DrawTriangle(Point(v0.x, v0.y), Point(v1.x, v1.y), Point(v2.x, v2.y), poly.tvList[0].color)
 
 # endregion

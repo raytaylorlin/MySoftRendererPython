@@ -61,7 +61,7 @@ def AddObjectBatch(objModel, renderList, camera):
         for z in range(-numObjects // 2, numObjects // 2):
             pos = Vector4(x * objectSpacing + objectSpacing // 2, 0, z * objectSpacing + objectSpacing // 2)
             objModel.Reset()
-            objModel.SetWorldPosition(pos, transformLocal=True)
+            objModel.SetWorldPosition(pos)
             # 剔除物体
             if not camera.CullObject(objModel):
                 renderList.AddObject(objModel)

@@ -56,19 +56,20 @@ class EMaterialShadeMode(IntFlag):
     Constant = 1
     Flat = 2
     Phong = 4
-    Texture = 8
+    Gouraud = 8
+    Texture = 16
 
 
 class Material(object):
     """材质"""
 
     def __init__(self):
-        self.attr = EMaterialShadeMode.Flat
+        self.mode = EMaterialShadeMode.Flat
         self.color = ColorDefine.White
         self.ka = self.kd = self.ks = 0.0
 
     def CanBeShaded(self):
-        return self.attr != EMaterialShadeMode.Null
+        return self.mode != EMaterialShadeMode.Null
 
 
 class EPolyState(IntFlag):
@@ -104,6 +105,14 @@ class Poly(BitMixin):
         self.tvList.append(vCopy)
         self.vIndexList.append(i)
 
+    def Clone(self, objTransList):
+        newPoly = Poly()
+        for i in self.vIndexList:
+            newPoly.AddVertex(i, objTransList[i])
+            newPoly.material = self.material
+            newPoly.normal = self.normal
+        return newPoly
+
     def GetNormal(self):
         if self.normal.IsZero():
             v01 = self.tvList[1].pos - self.tvList[0].pos
@@ -111,6 +120,17 @@ class Poly(BitMixin):
             self.normal = Vector4.Cross(v01, v02)
             self.normal.Normalize()
         return self.normal
+
+
+class EVertexAdjustFlag(IntFlag):
+    """顶点变换状态"""
+    Null = 0
+    InvertX = 1
+    InvertY = 2
+    InvertZ = 4
+    SwapYZ = 8
+    SwapXZ = 16
+    SwapXY = 32
 
 
 class Vertex(object):
@@ -132,6 +152,20 @@ class Vertex(object):
             self.pos.x = pos[0]
             self.pos.y = pos[1]
             self.pos.z = pos[2]
+
+    def Adjust(self, flag):
+        if flag & EVertexAdjustFlag.InvertX:
+            self.pos.x = -self.pos.x
+        elif flag & EVertexAdjustFlag.InvertY:
+            self.pos.y = -self.pos.y
+        elif flag & EVertexAdjustFlag.InvertZ:
+            self.pos.z = -self.pos.z
+        elif flag & EVertexAdjustFlag.SwapYZ:
+            self.pos.y, self.pos.z = self.pos.z, self.pos.y
+        elif flag & EVertexAdjustFlag.SwapXZ:
+            self.pos.x, self.pos.z = self.pos.z, self.pos.x
+        elif flag & EVertexAdjustFlag.SwapXY:
+            self.pos.x, self.pos.y = self.pos.y, self.pos.x
 
     def __str__(self):
         return 'Pos: {0}'.format(self.pos)
