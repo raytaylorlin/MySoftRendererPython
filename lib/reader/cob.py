@@ -5,7 +5,8 @@ import parse
 import json
 from utils import log
 from graphics.object import GameObject
-from graphics.base import Vertex, Poly, Material, Color, EMaterialShadeMode, EVertexAdjustFlag
+from graphics.base import *
+from lib.math3d import *
 
 
 class COBReader(object):

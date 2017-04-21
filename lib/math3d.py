@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from math import cos, sin, radians, sqrt
-from collections import namedtuple
 
 
 class Matrix4x4(object):
@@ -198,12 +197,76 @@ class Vector4(object):
         return Vector4(u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x)
 
 
+class Color(object):
+    """颜色"""
+
+    def __init__(self, r=0, g=0, b=0, a=255):
+        self.r = round(r)
+        self.g = round(g)
+        self.b = round(b)
+        self.a = round(a)
+
+    @property
+    def tuple(self):
+        return self.r, self.g, self.b, self.a
+
+    @staticmethod
+    def Multiply(result, color1, color2):
+        r = color1.r * color2.r // 256
+        g = color1.g * color2.g // 256
+        b = color1.b * color2.b // 256
+        result.r = min(result.r + r, 255)
+        result.g = min(result.g + g, 255)
+        result.b = min(result.b + b, 255)
+
+    @staticmethod
+    def Lerp(a, b, t):
+        if t < 0:
+            t = 0
+        elif t > 1:
+            t = 1
+        return Color(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t)
+
+    def __add__(self, other):
+        return Color(self.r + other.r, self.g + other.g, self.b + other.b, self.a)
+
+    def __sub__(self, other):
+        return Color(self.r - other.r, self.g - other.g, self.b - other.b, self.a)
+
+    def __mul__(self, other):
+        tempR = int(self.r * other)
+        tempG = int(self.g * other)
+        tempB = int(self.b * other)
+        return Color(tempR, tempG, tempB, self.a)
+
+    def __truediv__(self, other):
+        return Color(int(self.r / other), int(self.g / other), int(self.b / other), self.a)
+
+    def __eq__(self, other):
+        return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a
+
+    def __str__(self):
+        return str((self.r, self.g, self.b, self.a))
+
+
+class ColorDefine(object):
+    Black = Color(0, 0, 0)
+    White = Color(255, 255, 255)
+    Red = Color(255, 0, 0)
+    Green = Color(0, 255, 0)
+    Blue = Color(0, 0, 255)
+    Yellow = Color(255, 255, 0)
+    Cyan = Color(0, 255, 255)
+    Magenta = Color(255, 0, 255)
+
+
 class Point(object):
     """简单2D点定义"""
 
-    def __init__(self, x=0, y=0):
+    def __init__(self, x=0, y=0, color=ColorDefine.Black):
         self.x = x
         self.y = y
+        self.color = color
 
     def __str__(self):
-        return str((self.x, self.y))
+        return '{} {}'.format((self.x, self.y), self.color)

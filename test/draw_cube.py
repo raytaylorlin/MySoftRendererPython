@@ -20,7 +20,7 @@ def DrawCube(filename, removeBackFace):
 
     buffer = RenderBuffer(color=ColorDefine.White)
     renderList = RenderList(Rasterizer(buffer))
-    renderList.AddObject(obj)
+    renderList.AddObject(obj, useObjectMaterial=True)
     if removeBackFace:
         renderList.CheckBackFace(camera)
     renderList.TransformWorldToCamera(camera)

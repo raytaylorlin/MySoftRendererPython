@@ -13,6 +13,6 @@ def RunTest():
     # TestDrawLine()
     # TestDrawCube()
     # Main_TestUVNCameraSequence()
-    # Main_TestDrawTriangle()
+    Main_TestDrawTriangle()
     # Main_TestBaseLighting()
-    Main_TestReadCOB()
+    # Main_TestReadCOB()

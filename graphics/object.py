@@ -5,7 +5,7 @@ import math
 from enum import IntFlag, Enum
 
 from lib.math3d import *
-from graphics.base import Poly, EPolyState, Vertex, Color, Material
+from graphics.base import *
 from graphics.render import RenderBuffer
 from graphics.lighting import *
 from utils.mixins import BitMixin
@@ -226,7 +226,7 @@ class RenderList(object):
         self.sortPolyMethod = sortPolyMethod
         self.polyList = []
 
-    def AddObject(self, obj):
+    def AddObject(self, obj, useObjectMaterial=False):
         if not obj.IsEnabled():
             return
 
@@ -236,8 +236,8 @@ class RenderList(object):
             if not poly.IsEnabled():
                 continue
 
-            newPoly = Poly(obj.material)
-            # newPoly = poly.Clone(obj.vListTrans)
+            # useObjectMaterial决定了使用物体的材质还是多边形的材质
+            newPoly = Poly(obj.material if useObjectMaterial else poly.material)
             for i in poly.vIndexList:
                 newPoly.AddVertex(i, obj.vListTrans[i])
             self.polyList.append(newPoly)
@@ -309,18 +309,12 @@ class RenderList(object):
             if not poly.IsEnabled():
                 continue
 
-            v0 = poly.tvList[0].pos
-            v1 = poly.tvList[1].pos
-            v2 = poly.tvList[2].pos
-            self.rasterizer.DrawLine(Point(round(v0.x), round(v0.y)),
-                                     Point(round(v1.x), round(v1.y)),
-                                     poly.material.color)
-            self.rasterizer.DrawLine(Point(round(v1.x), round(v1.y)),
-                                     Point(round(v2.x), round(v2.y)),
-                                     poly.material.color)
-            self.rasterizer.DrawLine(Point(round(v2.x), round(v2.y)),
-                                     Point(round(v0.x), round(v0.y)),
-                                     poly.material.color)
+            v0 = poly.tvList[0]
+            v1 = poly.tvList[1]
+            v2 = poly.tvList[2]
+            self.rasterizer.DrawLine(Point(v0.pos.x, v0.pos.y), Point(v1.pos.x, v1.pos.y), poly.material.color)
+            self.rasterizer.DrawLine(Point(v1.pos.x, v1.pos.y), Point(v2.pos.x, v2.pos.y), poly.material.color)
+            self.rasterizer.DrawLine(Point(v2.pos.x, v2.pos.y), Point(v0.pos.x, v0.pos.y), poly.material.color)
 
     def CalculateLighting(self, lightList):
         """计算光照"""
@@ -346,6 +340,7 @@ class RenderList(object):
             v0 = poly.tvList[0].pos
             v1 = poly.tvList[1].pos
             v2 = poly.tvList[2].pos
-            self.rasterizer.DrawTriangle(Point(v0.x, v0.y), Point(v1.x, v1.y), Point(v2.x, v2.y), poly.tvList[0].color)
+            if poly.material.mode == EMaterialShadeMode.Flat:
+                self.rasterizer.DrawTriangle(v0, v1, v2, poly.tvList[0].color)
 
 # endregion

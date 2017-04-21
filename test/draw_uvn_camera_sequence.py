@@ -3,7 +3,7 @@
 import os
 import math
 
-from graphics.base import Color, ColorDefine
+from lib.math3d import Color, ColorDefine
 from graphics.object import *
 from graphics.render import Rasterizer, ImageRenderer
 from lib.reader.plg import PLGReader
@@ -64,7 +64,7 @@ def AddObjectBatch(objModel, renderList, camera):
             objModel.SetWorldPosition(pos)
             # 剔除物体
             if not camera.CullObject(objModel):
-                renderList.AddObject(objModel)
+                renderList.AddObject(objModel, useObjectMaterial=True)
 
 
 def TransformRenderList(renderList, camera):

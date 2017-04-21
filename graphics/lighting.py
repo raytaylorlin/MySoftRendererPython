@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import utils.log as log
-from graphics.base import Color
-from lib.math3d import Vector4
+from lib.math3d import Vector4, Color
 
 
 class Light(object):

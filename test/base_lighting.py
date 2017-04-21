@@ -3,7 +3,7 @@
 import os
 import math
 
-from graphics.base import Color, ColorDefine
+from lib.math3d import Color, ColorDefine
 from graphics.lighting import *
 from graphics.object import *
 from graphics.render import Rasterizer, ImageRenderer
