@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import random
 from graphics.base import Vertex
 from graphics.render import Rasterizer, RenderBuffer, ImageRenderer
 from lib.math3d import Point, Color, ColorDefine
@@ -20,6 +21,10 @@ def Main_TestDrawTriangle():
     bottomRight = Point(650, 600)
     log.logger.info('Drawing triangle with clip region({}, {})...'.format(topLeft, bottomRight))
     DrawTriangle(outputDir + '/simple_clip.png', topLeft, bottomRight)
+
+    RANDOM_NUM = 10
+    log.logger.info('Drawing {} random interpolation triangle...'.format(RANDOM_NUM))
+    DrawRandomInterpolationTriangle(RANDOM_NUM, outputDir + '/random_interpolation.png')
 
 
 def DrawTriangle(filename, clipRegionTopLeft=None, clipRegionBottomRight=None):
@@ -42,6 +47,23 @@ def DrawTriangle(filename, clipRegionTopLeft=None, clipRegionBottomRight=None):
     rasterizer.DrawTriangle(Point(600, 450, ColorDefine.Blue),
                             Point(700, 650, ColorDefine.Blue),
                             Point(350, 750, ColorDefine.Blue))
+
+    renderer = ImageRenderer(filename)
+    renderer.Render(buffer)
+
+
+def DrawRandomInterpolationTriangle(randomNum, filename):
+    buffer = RenderBuffer(color=ColorDefine.Black)
+    rasterizer = Rasterizer(buffer)
+
+    sizeW = RenderBuffer.DefaultWidth
+    sizeH = RenderBuffer.DefaultHeight
+    for i in range(randomNum):
+        p1 = Point(random.randrange(sizeW), random.randrange(sizeH), Color.Random())
+        p2 = Point(random.randrange(sizeW), random.randrange(sizeH), Color.Random())
+        p3 = Point(random.randrange(sizeW), random.randrange(sizeH), Color.Random())
+        log.logger.debug('p1 = {} p2 = {}, p3 = {}'.format(p1, p2, p3))
+        rasterizer.DrawTriangle(p1, p2, p3)
 
     renderer = ImageRenderer(filename)
     renderer.Render(buffer)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import random
 from math import cos, sin, radians, sqrt
 
 
@@ -201,14 +202,14 @@ class Color(object):
     """颜色"""
 
     def __init__(self, r=0, g=0, b=0, a=255):
-        self.r = round(r)
-        self.g = round(g)
-        self.b = round(b)
-        self.a = round(a)
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
 
     @property
     def tuple(self):
-        return self.r, self.g, self.b, self.a
+        return round(self.r), round(self.g), round(self.b), round(self.a)
 
     @staticmethod
     def Multiply(result, color1, color2):
@@ -227,6 +228,11 @@ class Color(object):
             t = 1
         return Color(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t)
 
+    @staticmethod
+    def Random(transparent=False):
+        return Color(random.randrange(255), random.randrange(255), random.randrange(255),
+                     random.randrange(255) if transparent else 255)
+
     def __add__(self, other):
         return Color(self.r + other.r, self.g + other.g, self.b + other.b, self.a)
 
@@ -234,13 +240,10 @@ class Color(object):
         return Color(self.r - other.r, self.g - other.g, self.b - other.b, self.a)
 
     def __mul__(self, other):
-        tempR = int(self.r * other)
-        tempG = int(self.g * other)
-        tempB = int(self.b * other)
-        return Color(tempR, tempG, tempB, self.a)
+        return Color(self.r * other, self.g * other, self.b * other, self.a)
 
     def __truediv__(self, other):
-        return Color(int(self.r / other), int(self.g / other), int(self.b / other), self.a)
+        return Color(self.r / other, self.g / other, self.b / other, self.a)
 
     def __eq__(self, other):
         return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a

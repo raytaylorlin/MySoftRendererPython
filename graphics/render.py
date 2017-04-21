@@ -95,7 +95,7 @@ class Rasterizer(object):
         else:
             # 由上面点的排序可知，p1-p3必为长边，在长边上找出分割点的X坐标
             splitX = p1.x + (p2.y - p1.y) * (p3.x - p1.x) / (p3.y - p1.y)
-            splitColor = Color.Lerp(p1.color, p3.color, p2.y / (p3.y - p1.y))
+            splitColor = Color.Lerp(p1.color, p3.color, (p2.y - p1.y) / (p3.y - p1.y))
             splitPoint = Point(splitX, p2.y, splitColor)
             # 画被分割的上平底和下平顶三角形
             self.DrawBottomFlatTriangle(p1, splitPoint, p2)
@@ -177,7 +177,7 @@ class Rasterizer(object):
         # X点都在裁剪范围内
         if minClipX <= x1 <= maxClipX and minClipX <= x2 <= maxClipX and minClipX <= x3 <= maxClipX:
             for loopY in range(iy1, iy3 + 1):
-                self.__DrawHorizontalLine(int(xs), int(xe), loopY, cs, ce)
+                self.__DrawHorizontalLine(round(xs), round(xe), loopY, cs, ce)
                 xs += dxLeft
                 xe += dxRight
                 cs += dcLeft
@@ -203,13 +203,15 @@ class Rasterizer(object):
                     rightC = Color.Lerp(cs, ce, maxClipX / (xe - xs))
                     if left > maxClipX:
                         continue
-                self.__DrawHorizontalLine(int(left), int(right), loopY, leftC, rightC)
+                self.__DrawHorizontalLine(round(left), round(right), loopY, leftC, rightC)
 
     def __DrawHorizontalLine(self, x1, x2, y, c1, c2):
         """画水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
             c1, c2 = c2, c1
+        elif x1 == x2:
+            return
 
         sameColor = c1 == c2
         if sameColor:
