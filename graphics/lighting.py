@@ -24,7 +24,11 @@ class AmbientLight(Light):
         super(AmbientLight, self).__init__(color)
 
     def Calculate(self, resultColor, poly):
-        Color.Multiply(resultColor, self.color, poly.material.color)
+        if isinstance(resultColor, Color):
+            Color.Multiply(resultColor, self.color, poly.material.color)
+        elif isinstance(resultColor, list):
+            for rc in resultColor:
+                Color.Multiply(rc, self.color, poly.material.color)
         super(AmbientLight, self).Calculate(resultColor, poly)
 
 
@@ -41,12 +45,19 @@ class DirectionalLight(Light):
         # I(d)dir = I0dir * Cldir （结果即为下方的Idifffuse）
         # 散射光计算公式；
         # Itotald = Rsdiffuse * Idiffuse * (n . l)
-        n = poly.GetNormal()
-        dp = Vector4.Dot(n, self.direction)
+
+        if isinstance(resultColor, Color):
+            self.__Calculate(resultColor, poly.GetNormal(), poly.material.color)
+            super(DirectionalLight, self).Calculate(resultColor, poly)
+        elif isinstance(resultColor, list):
+            for i in range(3):
+                self.__Calculate(resultColor[i], poly.tvList[i].normal, poly.material.color)
+
+    def __Calculate(self, resultColor, normal, baseColor):
+        dp = Vector4.Dot(normal, self.direction)
         if dp > 0:
             i = dp
-            Color.Multiply(resultColor, self.color * i, poly.material.color)
-            super(DirectionalLight, self).Calculate(resultColor, poly)
+            Color.Multiply(resultColor, self.color * i, baseColor)
 
 
 class PointLight(Light):
@@ -66,12 +77,19 @@ class PointLight(Light):
         #              kc +  kl*d + kq*d2
         #
         #  d = |p - s|
-        n = poly.GetNormal()
-        l = self.pos - poly.tvList[0].pos
+
+        if isinstance(resultColor, Color):
+            self.__Calculate(resultColor, poly.GetNormal(), poly.tvList[0].pos, poly.material.color)
+            super(PointLight, self).Calculate(resultColor, poly)
+        elif isinstance(resultColor, list):
+            for i in range(3):
+                self.__Calculate(resultColor[i], poly.tvList[i].normal, poly.tvList[i].pos, poly.material.color)
+
+    def __Calculate(self, resultColor, normal, pos, baseColor):
+        l = self.pos - pos
         dist = l.sqrMagnitude
-        dp = Vector4.Dot(n, l)
+        dp = Vector4.Dot(normal, l)
         if dp > 0:
             a = self.params[0] + self.params[1] * dist + self.params[2] * dist * dist
             i = dp / dist / a
-            Color.Multiply(resultColor, self.color * i, poly.material.color)
-            super(PointLight, self).Calculate(resultColor, poly)
+            Color.Multiply(resultColor, self.color * i, baseColor)

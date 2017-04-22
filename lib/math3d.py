@@ -255,6 +255,7 @@ class Color(object):
 class ColorDefine(object):
     Black = Color(0, 0, 0)
     White = Color(255, 255, 255)
+    Gray = Color(100, 100, 100)
     Red = Color(255, 0, 0)
     Green = Color(0, 255, 0)
     Blue = Color(0, 0, 255)

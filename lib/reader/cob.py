@@ -162,7 +162,6 @@ class COBReader(object):
             map(lambda x: int(x * 256), m['rgb'])
             material.color = Color(int(m['rgb'][0] * 255), int(m['rgb'][1] * 255), int(m['rgb'][2] * 255),
                                    int(m['alpha'] * 255))
-            print(material.color)
             # kd暂且设为1
             material.ka, material.kd, material.ks = m['ka'], 1, m['ks']
             for s in m['shaders']:
@@ -175,7 +174,18 @@ class COBReader(object):
             newPoly.material = materialList[p['mat']]
             for i in p['vertexIndex']:
                 newPoly.AddVertex(i, obj.vListLocal[i])
+                obj.vertexToPolyDict[obj.vListLocal[i]].append(newPoly)
             obj.AddPoly(newPoly)
+
+        # 计算顶点法线
+        for i in range(len(obj.vListLocal)):
+            v = obj.vListLocal[i]
+            # 求共用顶点的多边形的法线均值
+            n = Vector4()
+            for p in obj.vertexToPolyDict[v]:
+                n += p.GetNormal()
+            n.Normalize()
+            obj.vListLocal[i].normal = obj.vListTrans[i].normal = n
 
         return obj
 

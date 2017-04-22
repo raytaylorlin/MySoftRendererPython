@@ -2,6 +2,7 @@
 
 import utils.log as log
 import math
+import collections
 from enum import IntFlag, Enum
 
 from lib.math3d import *
@@ -130,6 +131,7 @@ class GameObject(BitMixin):
         self.vListLocal = []
         self.vListTrans = []
         self.polyList = []
+        self.vertexToPolyDict = collections.defaultdict(list)
         self.material = Material()
 
         # 平均半径和最大半径
@@ -149,6 +151,7 @@ class GameObject(BitMixin):
         self.vListLocal.append(v)
         vCopy = Vertex()
         vCopy.SetPosition(v.pos)
+        vCopy.SetNormal(v.normal)
         self.vListTrans.append(vCopy)
 
     def AddPoly(self, p):
@@ -322,25 +325,46 @@ class RenderList(object):
             if (not poly.IsEnabled()) or (not poly.material.CanBeShaded()):
                 continue
 
-            resultColor = Color()
-            log.logger.debug('Start color: {}'.format(resultColor))
-            for light in lightList:
-                light.Calculate(resultColor, poly)
-
-            # 给顶点着色
-            for v in poly.tvList:
-                v.color = resultColor
-            # poly.material.color = resultColor
+            log.logger.debug('Poly material: {}'.format(poly.material.mode))
+            # 固定着色
+            if poly.material.mode == EMaterialShadeMode.Constant:
+                for v in poly.tvList:
+                    v.color = poly.material.color
+            # 恒定着色
+            elif poly.material.mode == EMaterialShadeMode.Flat:
+                resultColor = Color()
+                for light in lightList:
+                    light.Calculate(resultColor, poly)
+                for v in poly.tvList:
+                    v.color = resultColor
+            # Gouraud着色（分别对每个顶点计算并着色）
+            elif poly.material.mode == EMaterialShadeMode.Gouraud:
+                resultColor = [Color(), Color(), Color()]
+                for light in lightList:
+                    light.Calculate(resultColor, poly)
+                for i in range(3):
+                    poly.tvList[i].color = resultColor[i]
 
     def RenderSolid(self):
         for poly in self.polyList:
             if not poly.IsEnabled():
                 continue
 
-            v0 = poly.tvList[0].pos
-            v1 = poly.tvList[1].pos
-            v2 = poly.tvList[2].pos
-            if poly.material.mode == EMaterialShadeMode.Flat:
-                self.rasterizer.DrawTriangle(v0, v1, v2, poly.tvList[0].color)
+            v0 = poly.tvList[0]
+            v1 = poly.tvList[1]
+            v2 = poly.tvList[2]
+            # if poly.material.mode == EMaterialShadeMode.Flat or poly.material.mode == EMaterialShadeMode.Constant:
+            self.rasterizer.DrawTriangle(Point(v0.pos.x, v0.pos.y, v0.color),
+                                         Point(v1.pos.x, v1.pos.y, v1.color),
+                                         Point(v2.pos.x, v2.pos.y, v2.color))
+
+    def PreRender(self, camera, lightList):
+        self.CheckBackFace(camera)
+        self.TransformWorldToCamera(camera)
+        self.Sort()
+        self.TransformCameraToPerspective(camera)
+        self.TransformPerspectiveToScreen(camera)
+        self.CalculateLighting(lightList)
+
 
 # endregion

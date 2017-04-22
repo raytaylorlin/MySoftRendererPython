@@ -58,6 +58,7 @@ class Poly(BitMixin):
         self.vList.append(v)
         vCopy = Vertex()
         vCopy.SetPosition(v.pos)
+        vCopy.SetNormal(v.normal)
         self.tvList.append(vCopy)
         self.vIndexList.append(i)
 
@@ -108,6 +109,12 @@ class Vertex(object):
             self.pos.x = pos[0]
             self.pos.y = pos[1]
             self.pos.z = pos[2]
+
+    def SetNormal(self, normal):
+        self.normal.x = normal.x
+        self.normal.y = normal.y
+        self.normal.z = normal.z
+        self.normal.w = normal.w
 
     def Adjust(self, flag):
         if flag & EVertexAdjustFlag.InvertX:
