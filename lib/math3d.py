@@ -295,10 +295,8 @@ class Point(object):
 class UVPoint(Point):
     def __init__(self, x, y, color, u, v, material):
         super(UVPoint, self).__init__(x, y, color)
-        # self.u = round(u) if u >= 0 else round(texture.size[0] - u)
-        # self.v = round(v) if v >= 0 else round(texture.size[1] - v)
-        self.u = round(u)
-        self.v = round(v)
+        self.u = u
+        self.v = v
         self.material = material
 
     def __str__(self):

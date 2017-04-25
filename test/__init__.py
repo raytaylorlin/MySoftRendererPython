@@ -12,11 +12,11 @@ from test.draw_texture_cube import Main_TestDrawTextureCube
 
 
 def RunTest():
-    TestDrawLine()
-    TestDrawCube()
-    Main_TestUVNCameraSequence()
-    Main_TestDrawTriangle()
-    Main_TestBaseLighting()
-    Main_TestReadCOB()
-    Main_Test3Shading()
+    # TestDrawLine()
+    # TestDrawCube()
+    # Main_TestUVNCameraSequence()
+    # Main_TestDrawTriangle()
+    # Main_TestBaseLighting()
+    # Main_TestReadCOB()
+    # Main_Test3Shading()
     Main_TestDrawTextureCube()

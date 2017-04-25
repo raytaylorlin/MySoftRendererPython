@@ -200,9 +200,11 @@ class Rasterizer(object):
         if minClipX <= x1 <= maxClipX and minClipX <= x2 <= maxClipX and minClipX <= x3 <= maxClipX:
             for loopY in range(iy1, iy3 + 1):
                 if textureInfo:
-                    self.__DrawTexturedHorizontalLine(round(xs), round(xe), loopY, ts, te, p1.material)
+                    self.__DrawTexturedHorizontalLine(round(xs), round(xe), loopY, cs, ce, ts, te, p1.material)
                     xs += dxLeft
                     xe += dxRight
+                    cs += dcLeft
+                    ce += dcRight
                     ts[0] += dtLeft[0]
                     ts[1] += dtLeft[1]
                     te[0] += dtRight[0]
@@ -256,16 +258,19 @@ class Rasterizer(object):
                 self.buffer.Set((x, y), color)
                 color += dc
 
-    def __DrawTexturedHorizontalLine(self, x1, x2, y, uv1, uv2, material):
+    def __DrawTexturedHorizontalLine(self, x1, x2, y, c1, c2, uv1, uv2, material):
         """画水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
+            c1, c2 = c2, c1
             uv1, uv2 = uv2, uv1
         elif x1 == x2:
             return
 
+        dc = (c2 - c1) / (x2 - x1)
         du = (uv2[0] - uv1[0]) / (x2 - x1)
         dv = (uv2[1] - uv1[1]) / (x2 - x1)
+        baseColor = c1
         u, v = uv1
         for x in range(x1, x2):
             while u < 0:
@@ -278,9 +283,12 @@ class Rasterizer(object):
             while v > 1:
                 v -= 1
             vPixel = min(round(material.textureSize[1] * v), material.textureSize[1] - 1)
-            # print(x, (u, v), (uPixel, vPixel))
-            pixel = material.texture[uPixel, vPixel]
-            self.buffer.Set((x, y), Color(pixel[0], pixel[1], pixel[2]))
+            temp = material.texture[uPixel, vPixel]
+            textureColor = Color(temp[0], temp[1], temp[2])
+            finalColor = Color()
+            Color.Multiply(finalColor, textureColor, baseColor)
+            self.buffer.Set((x, y), finalColor)
+            baseColor += dc
             u += du
             v += dv
 
