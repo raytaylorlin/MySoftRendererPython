@@ -94,9 +94,14 @@ class Rasterizer(object):
             self.DrawBottomFlatTriangle(p1, p2, p3)
         else:
             # 由上面点的排序可知，p1-p3必为长边，在长边上找出分割点的X坐标
-            splitX = p1.x + (p2.y - p1.y) * (p3.x - p1.x) / (p3.y - p1.y)
-            splitColor = Color.Lerp(p1.color, p3.color, (p2.y - p1.y) / (p3.y - p1.y))
-            splitPoint = Point(splitX, p2.y, splitColor)
+            rate = (p2.y - p1.y) / (p3.y - p1.y)
+            splitX = p1.x + (p3.x - p1.x) * rate
+            splitColor = Color.Lerp(p1.color, p3.color, rate)
+            if isinstance(p1, UVPoint):
+                splitPoint = UVPoint(splitX, p2.y, splitColor,
+                                     (p3.u - p1.u) * rate, (p3.v - p1.v) * rate, p1.material)
+            else:
+                splitPoint = Point(splitX, p2.y, splitColor)
             # 画被分割的上平底和下平顶三角形
             self.DrawBottomFlatTriangle(p1, splitPoint, p2)
             self.DrawTopFlatTriangle(p2, splitPoint, p3)
@@ -118,7 +123,15 @@ class Rasterizer(object):
             dcRight = (_p3.color - _p1.color) / height
             xs = xe = _p1.x
             cs = ce = _p1.color
-            return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight)
+
+            if isinstance(_p1, UVPoint):
+                ts = [_p1.u, _p1.v]
+                te = [_p1.u, _p1.v]
+                dtLeft = ((_p2.u - _p1.u) / height, (_p2.v - _p1.v) / height)
+                dtRight = ((_p3.u - _p1.u) / height, (_p3.v - _p1.v) / height)
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (ts, te, dtLeft, dtRight)
+            else:
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), None
 
         self.__DrawClipTriangle(p1, p2, p3, __Init)
 
@@ -139,15 +152,24 @@ class Rasterizer(object):
             dcRight = (_p3.color - _p2.color) / height
             xs, xe = _p1.x, _p2.x
             cs, ce = _p1.color, _p2.color
-            return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight)
+
+            if isinstance(_p1, UVPoint):
+                ts, te = [_p1.u, _p1.v], [_p2.u, _p2.v]
+                dtLeft = ((_p3.u - _p1.u) / height, (_p3.v - _p1.v) / height)
+                dtRight = ((_p3.u - _p2.u) / height, (_p3.v - _p2.v) / height)
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (ts, te, dtLeft, dtRight)
+            else:
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), None
 
         self.__DrawClipTriangle(p1, p2, p3, __Init)
 
     def __DrawClipTriangle(self, p1, p2, p3, initFunc):
         x1, y1, c1, x2, y2, c2, x3, y3, c3 = p1.x, p1.y, p1.color, p2.x, p2.y, p2.color, p3.x, p3.y, p3.color
-        posInfo, colorInfo = initFunc(p1, p2, p3)
+        posInfo, colorInfo, textureInfo = initFunc(p1, p2, p3)
         xs, xe, dxLeft, dxRight = posInfo
         cs, ce, dcLeft, dcRight = colorInfo
+        if textureInfo:
+            ts, te, dtLeft, dtRight = textureInfo
         minClipX = self.clipRegion[0].x
         minClipY = self.clipRegion[0].y
         maxClipX = self.clipRegion[1].x
@@ -177,11 +199,21 @@ class Rasterizer(object):
         # X点都在裁剪范围内
         if minClipX <= x1 <= maxClipX and minClipX <= x2 <= maxClipX and minClipX <= x3 <= maxClipX:
             for loopY in range(iy1, iy3 + 1):
-                self.__DrawHorizontalLine(round(xs), round(xe), loopY, cs, ce)
-                xs += dxLeft
-                xe += dxRight
-                cs += dcLeft
-                ce += dcRight
+                if textureInfo:
+                    self.__DrawTexturedHorizontalLine(round(xs), round(xe), loopY, ts, te, p1.material)
+                    xs += dxLeft
+                    xe += dxRight
+                    ts[0] += dtLeft[0]
+                    ts[1] += dtLeft[1]
+                    te[0] += dtRight[0]
+                    te[1] += dtRight[1]
+                else:
+                    self.__DrawHorizontalLine(round(xs), round(xe), loopY, cs, ce)
+                    xs += dxLeft
+                    xe += dxRight
+                    cs += dcLeft
+                    ce += dcRight
+
         else:
             # 裁剪X轴会稍微慢一些
             for loopY in range(iy1, iy3 + 1):
@@ -223,6 +255,34 @@ class Rasterizer(object):
             for x in range(x1, x2):
                 self.buffer.Set((x, y), color)
                 color += dc
+
+    def __DrawTexturedHorizontalLine(self, x1, x2, y, uv1, uv2, material):
+        """画水平扫描线（颜色不同则对颜色插值）"""
+        if x1 > x2:
+            x1, x2 = x2, x1
+            uv1, uv2 = uv2, uv1
+        elif x1 == x2:
+            return
+
+        du = (uv2[0] - uv1[0]) / (x2 - x1)
+        dv = (uv2[1] - uv1[1]) / (x2 - x1)
+        u, v = uv1
+        for x in range(x1, x2):
+            while u < 0:
+                u += 1
+            while u > 1:
+                u -= 1
+            uPixel = min(round(material.textureSize[0] * u), material.textureSize[0] - 1)
+            while v < 0:
+                v += 1
+            while v > 1:
+                v -= 1
+            vPixel = min(round(material.textureSize[1] * v), material.textureSize[1] - 1)
+            # print(x, (u, v), (uPixel, vPixel))
+            pixel = material.texture[uPixel, vPixel]
+            self.buffer.Set((x, y), Color(pixel[0], pixel[1], pixel[2]))
+            u += du
+            v += dv
 
     def SetClipRegion(self, p1, p2):
         """设置裁剪区域"""

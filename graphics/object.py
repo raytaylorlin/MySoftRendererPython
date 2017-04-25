@@ -132,6 +132,7 @@ class GameObject(BitMixin):
         self.vListTrans = []
         self.polyList = []
         self.vertexToPolyDict = collections.defaultdict(list)
+        self.textureVertexList = []
         self.material = Material()
 
         # 平均半径和最大半径
@@ -203,14 +204,6 @@ class GameObject(BitMixin):
             self.vListTrans[i].pos = vTranslate
             log.logger.debug('world pos = {}, vListTrans[i].pos = {}'.format(self.worldPos, self.vListTrans[i].pos))
 
-    def TransformByMatrix(self, matrix, transformLocal=False):
-        """使用一个矩阵来变换坐标"""
-        assert isinstance(matrix, Matrix4x4)
-
-        vSourceList = self.vListLocal if transformLocal else self.vListTrans
-        for i in range(len(vSourceList)):
-            self.vListTrans[i].pos = matrix * vSourceList[i].pos
-
 
 # endregion
 
@@ -241,8 +234,10 @@ class RenderList(object):
 
             # useObjectMaterial决定了使用物体的材质还是多边形的材质
             newPoly = Poly(obj.material if useObjectMaterial else poly.material)
+            index = 0
             for i in poly.vIndexList:
-                newPoly.AddVertex(i, obj.vListTrans[i])
+                newPoly.AddVertex(i, obj.vListTrans[i], poly.tvList[index].textureCoord)
+                index += 1
             self.polyList.append(newPoly)
 
     def Reset(self):
@@ -354,9 +349,15 @@ class RenderList(object):
             v1 = poly.tvList[1]
             v2 = poly.tvList[2]
             # if poly.material.mode == EMaterialShadeMode.Flat or poly.material.mode == EMaterialShadeMode.Constant:
-            self.rasterizer.DrawTriangle(Point(v0.pos.x, v0.pos.y, v0.color),
-                                         Point(v1.pos.x, v1.pos.y, v1.color),
-                                         Point(v2.pos.x, v2.pos.y, v2.color))
+            # poly.material.texture = None
+            if not poly.material.texture:
+                self.rasterizer.DrawTriangle(Point(v0.pos.x, v0.pos.y, v0.color),
+                                             Point(v1.pos.x, v1.pos.y, v1.color),
+                                             Point(v2.pos.x, v2.pos.y, v2.color))
+            else:
+                self.rasterizer.DrawTriangle(UVPoint(v0.pos.x, v0.pos.y, v0.color, v0.textureCoord.x, v0.textureCoord.y, poly.material),
+                                             UVPoint(v1.pos.x, v1.pos.y, v1.color, v1.textureCoord.x, v1.textureCoord.y, poly.material),
+                                             UVPoint(v2.pos.x, v2.pos.y, v2.color, v2.textureCoord.x, v2.textureCoord.y, poly.material))
 
     def PreRender(self, camera, lightList):
         self.CheckBackFace(camera)

@@ -272,5 +272,34 @@ class Point(object):
         self.y = y
         self.color = color
 
+    @staticmethod
+    def FromVertex(v):
+        point = Point()
+        point.x = v.pos.x
+        point.y = v.pos.y
+        point.color = v.color
+        return point
+
+    @staticmethod
+    def Lerp(a, b, t):
+        if t < 0:
+            t = 0
+        elif t > 1:
+            t = 1
+        return Point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+
     def __str__(self):
         return '{} {}'.format((self.x, self.y), self.color)
+
+
+class UVPoint(Point):
+    def __init__(self, x, y, color, u, v, material):
+        super(UVPoint, self).__init__(x, y, color)
+        # self.u = round(u) if u >= 0 else round(texture.size[0] - u)
+        # self.v = round(v) if v >= 0 else round(texture.size[1] - v)
+        self.u = round(u)
+        self.v = round(v)
+        self.material = material
+
+    def __str__(self):
+        return '{} {} {}'.format((self.x, self.y), self.color, (self.u, self.v))

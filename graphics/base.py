@@ -23,6 +23,8 @@ class Material(object):
         self.mode = EMaterialShadeMode.Flat
         self.color = ColorDefine.White
         self.ka = self.kd = self.ks = 0.0
+        self.texture = None
+        self.textureSize = (0, 0)
 
     def CanBeShaded(self):
         return self.mode != EMaterialShadeMode.Null
@@ -54,21 +56,24 @@ class Poly(BitMixin):
                not self.state & EPolyState.Clipped and \
                not self.state & EPolyState.BackFace
 
-    def AddVertex(self, i, v):
+    def AddVertex(self, i, v, tc=None):
         self.vList.append(v)
+        # 复制顶点的数据
         vCopy = Vertex()
         vCopy.SetPosition(v.pos)
         vCopy.SetNormal(v.normal)
+        if tc:
+            vCopy.SetTextureCorrd(tc)
         self.tvList.append(vCopy)
         self.vIndexList.append(i)
 
-    def Clone(self, objTransList):
-        newPoly = Poly()
-        for i in self.vIndexList:
-            newPoly.AddVertex(i, objTransList[i])
-            newPoly.material = self.material
-            newPoly.normal = self.normal
-        return newPoly
+    # def Clone(self, objTransList):
+    #     newPoly = Poly()
+    #     for i in self.vIndexList:
+    #         newPoly.AddVertex(i, objTransList[i])
+    #         newPoly.material = self.material
+    #         newPoly.normal = self.normal
+    #     return newPoly
 
     def GetNormal(self):
         if self.normal.IsZero():
@@ -93,10 +98,10 @@ class EVertexAdjustFlag(IntFlag):
 class Vertex(object):
     """顶点"""
 
-    def __init__(self, pos=None, normal=None, color=None):
+    def __init__(self, pos=None, normal=None, textureCoord=None, color=None):
         self.pos = pos or Vector4()
         self.normal = normal or Vector4()
-        self.textureCoord = (0, 0)
+        self.textureCoord = textureCoord or Point(0, 0)
         self.color = color or Color()
 
     def SetPosition(self, pos):
@@ -116,6 +121,11 @@ class Vertex(object):
         self.normal.z = normal.z
         self.normal.w = normal.w
 
+    def SetTextureCorrd(self, tc):
+        self.textureCoord.x = tc.x
+        self.textureCoord.y = tc.y
+        self.textureCoord.color = tc.color
+
     def Adjust(self, flag):
         if flag & EVertexAdjustFlag.InvertX:
             self.pos.x = -self.pos.x
@@ -131,4 +141,4 @@ class Vertex(object):
             self.pos.x, self.pos.y = self.pos.y, self.pos.x
 
     def __str__(self):
-        return 'Pos: {0}'.format(self.pos)
+        return 'Pos: {}, Normal: {}, Texture: {}'.format(self.pos, self.normal, self.textureCoord)

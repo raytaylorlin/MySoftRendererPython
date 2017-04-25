@@ -122,6 +122,9 @@ class COBReader(object):
                 if line.startswith('Mat1') or line.startswith('END'):
                     break
 
+                if not line.startswith('Shader class'):
+                    continue
+
                 # 材质shader信息
                 shader = {}
                 shader['class'] = parse.parse('Shader class: {}', line)[0]
@@ -136,7 +139,7 @@ class COBReader(object):
 
             data['materials'].append(material)
 
-        log.logger.debug(json.dumps(data, indent=2))
+        # log.logger.debug(json.dumps(data, indent=2))
         f.close()
 
         return data
@@ -149,6 +152,9 @@ class COBReader(object):
             newVertex.SetPosition(v)
             newVertex.Adjust(adjustFlag)
             obj.AddVertex(newVertex)
+
+        for tv in data['textureVertices']:
+            obj.textureVertexList.append(Point(tv[0], tv[1]))
 
         materialList = []
         materialShaderDict = {
@@ -167,14 +173,25 @@ class COBReader(object):
             for s in m['shaders']:
                 if s['class'] == 'reflectance':
                     material.mode = materialShaderDict[s['name']]
+                elif s['class'] == 'color' and s['name'] == 'texture map':
+                    from PIL import Image
+                    filename = s['params'][0]['value'].replace('"', '')
+                    im = Image.open('res\\' + filename)
+                    material.texture = im.load()
+                    material.textureSize = im.size
             materialList.append(material)
 
         for p in data['polys']:
             newPoly = Poly()
             newPoly.material = materialList[p['mat']]
-            for i in p['vertexIndex']:
-                newPoly.AddVertex(i, obj.vListLocal[i])
-                obj.vertexToPolyDict[obj.vListLocal[i]].append(newPoly)
+            for i in range(3):
+                vertexIndex = p['vertexIndex'][i]
+                textureVertexIndex = p['textureIndex'][i]
+                tc = obj.textureVertexList[textureVertexIndex]
+                tcp = Point(tc.x, tc.y)
+                newPoly.AddVertex(vertexIndex, obj.vListLocal[vertexIndex], tcp)
+                obj.vertexToPolyDict[obj.vListLocal[vertexIndex]].append(newPoly)
+
             obj.AddPoly(newPoly)
 
         # 计算顶点法线
