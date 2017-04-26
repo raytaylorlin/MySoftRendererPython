@@ -31,7 +31,7 @@ def Init():
     objModel = PLGReader('res/tank.plg').LoadObject()
     objModel.material.color = ColorDefine.Black
     buffer = RenderBuffer(color=ColorDefine.White)
-    renderList = RenderList(Rasterizer(buffer))
+    renderList = RenderList(Rasterizer(buffer), camera)
     return camera, objModel, buffer, renderList
 
 
@@ -62,9 +62,7 @@ def AddObjectBatch(objModel, renderList, camera):
             pos = Vector4(x * objectSpacing + objectSpacing // 2, 0, z * objectSpacing + objectSpacing // 2)
             objModel.Reset()
             objModel.SetWorldPosition(pos)
-            # 剔除物体
-            if not camera.CullObject(objModel):
-                renderList.AddObject(objModel, useObjectMaterial=True)
+            renderList.AddObject(objModel, useObjectMaterial=True)
 
 
 def TransformRenderList(renderList, camera):

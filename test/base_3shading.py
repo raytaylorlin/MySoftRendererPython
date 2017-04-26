@@ -39,7 +39,7 @@ def Init():
         PointLight(ColorDefine.Yellow, pos=Vector4(0, -4000, 0), params=(0, 0.001, 0))
     ]
 
-    renderList = RenderList(Rasterizer(buffer))
+    renderList = RenderList(Rasterizer(buffer), camera)
     return camera, [objConstant, objFlat, objGouraud], buffer, renderList, lightList
 
 

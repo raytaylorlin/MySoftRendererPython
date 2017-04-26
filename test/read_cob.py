@@ -15,7 +15,7 @@ def Main_TestReadCOB():
     # obj.material.color = ColorDefine.Black
 
     buffer = RenderBuffer(color=ColorDefine.Black)
-    renderList = RenderList(Rasterizer(buffer))
+    renderList = RenderList(Rasterizer(buffer), camera)
     renderList.AddObject(obj)
 
     renderList.CheckBackFace(camera)

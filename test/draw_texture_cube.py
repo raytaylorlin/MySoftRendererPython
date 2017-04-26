@@ -24,7 +24,7 @@ def DrawCube(filename, removeBackFace):
         AmbientLight(ColorDefine.Gray),
         DirectionalLight(ColorDefine.White, direction=Vector4(-1, 0.5, -1))
     ]
-    renderList = RenderList(Rasterizer(buffer))
+    renderList = RenderList(Rasterizer(buffer), camera)
     renderList.AddObject(obj)
     renderList.PreRender(camera, lightList)
     renderList.RenderSolid()

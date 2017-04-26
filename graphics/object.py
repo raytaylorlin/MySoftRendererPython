@@ -217,13 +217,18 @@ class ESortPolyMethod(Enum):
 
 
 class RenderList(object):
-    def __init__(self, rasterizer, sortPolyMethod=ESortPolyMethod.AverageZ):
+    def __init__(self, rasterizer, camera, sortPolyMethod=ESortPolyMethod.AverageZ):
         self.rasterizer = rasterizer
+        self.camera = camera
         self.sortPolyMethod = sortPolyMethod
         self.polyList = []
 
     def AddObject(self, obj, useObjectMaterial=False):
         if not obj.IsEnabled():
+            return
+
+        # 剔除物体检测
+        if self.camera.CullObject(obj):
             return
 
         obj.TransformModelToWorld()

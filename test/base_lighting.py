@@ -53,7 +53,7 @@ def Init():
 
     # 相机空间排序（可以设置为ESortPolyMethod.Null看看不正常的效果）
     sortPolyMethod = ESortPolyMethod.AverageZ
-    renderList = RenderList(Rasterizer(buffer), sortPolyMethod)
+    renderList = RenderList(Rasterizer(buffer), camera, sortPolyMethod)
     return camera, objModel, buffer, renderList
 
 
