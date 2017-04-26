@@ -144,7 +144,7 @@ class COBReader(object):
 
         return data
 
-    def Deserialize(self, data, adjustFlag):
+    def Deserialize(self, data, adjustFlag, textureFilterMode):
         obj = GameObject()
         obj.name = data['name']
         for v in data['vertices']:
@@ -165,6 +165,7 @@ class COBReader(object):
         }
         for m in data['materials']:
             material = Material()
+            material.textureFilterMode = textureFilterMode
             map(lambda x: int(x * 256), m['rgb'])
             material.color = Color(int(m['rgb'][0] * 255), int(m['rgb'][1] * 255), int(m['rgb'][2] * 255),
                                    int(m['alpha'] * 255))
@@ -206,9 +207,9 @@ class COBReader(object):
 
         return obj
 
-    def LoadObject(self, adjustFlag=EVertexAdjustFlag.Null):
+    def LoadObject(self, adjustFlag=EVertexAdjustFlag.Null, textureFilterMode=ETextureFilterMode.Point):
         data = self.Load()
-        return self.Deserialize(data, adjustFlag)
+        return self.Deserialize(data, adjustFlag, textureFilterMode)
 
     def __GetLine(self, f):
         while True:

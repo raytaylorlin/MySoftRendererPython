@@ -3,6 +3,7 @@
 import math
 from PIL import Image
 import utils.log as log
+from graphics.base import ETextureFilterMode
 from lib.math3d import *
 
 
@@ -99,7 +100,7 @@ class Rasterizer(object):
             splitColor = Color.Lerp(p1.color, p3.color, rate)
             if isinstance(p1, UVPoint):
                 splitPoint = UVPoint(splitX, p2.y, splitColor,
-                                     (p3.u - p1.u) * rate, (p3.v - p1.v) * rate, p1.material)
+                                     p1.u + (p3.u - p1.u) * rate, p1.v + (p3.v - p1.v) * rate, p1.material)
             else:
                 splitPoint = Point(splitX, p2.y, splitColor)
             # 画被分割的上平底和下平顶三角形
@@ -123,7 +124,7 @@ class Rasterizer(object):
             dcRight = (_p3.color - _p1.color) / height
             xs = xe = _p1.x
             cs = ce = _p1.color
-
+            log.logger.debug('bottom flat: {}\n{}\n{}\n'.format(p1, p2, p3))
             if isinstance(_p1, UVPoint):
                 ts = [_p1.u, _p1.v]
                 te = [_p1.u, _p1.v]
@@ -152,7 +153,7 @@ class Rasterizer(object):
             dcRight = (_p3.color - _p2.color) / height
             xs, xe = _p1.x, _p2.x
             cs, ce = _p1.color, _p2.color
-
+            log.logger.debug('top flat: {}\n{}\n{}\n'.format(p1, p2, p3))
             if isinstance(_p1, UVPoint):
                 ts, te = [_p1.u, _p1.v], [_p2.u, _p2.v]
                 dtLeft = ((_p3.u - _p1.u) / height, (_p3.v - _p1.v) / height)
@@ -259,7 +260,7 @@ class Rasterizer(object):
                 color += dc
 
     def __DrawTexturedHorizontalLine(self, x1, x2, y, c1, c2, uv1, uv2, material):
-        """画水平扫描线（颜色不同则对颜色插值）"""
+        """画带纹理的水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
             c1, c2 = c2, c1
@@ -273,24 +274,56 @@ class Rasterizer(object):
         baseColor = c1
         u, v = uv1
         for x in range(x1, x2):
-            while u < 0:
-                u += 1
-            while u > 1:
-                u -= 1
-            uPixel = min(round(material.textureSize[0] * u), material.textureSize[0] - 1)
-            while v < 0:
-                v += 1
-            while v > 1:
-                v -= 1
-            vPixel = min(round(material.textureSize[1] * v), material.textureSize[1] - 1)
-            temp = material.texture[uPixel, vPixel]
-            textureColor = Color(temp[0], temp[1], temp[2])
+            # 获取纹理颜色
+            textureColor = self.__GetTexturePixelColor(u, v, material)
+            # 用光照颜色去调制纹理颜色
             finalColor = Color()
             Color.Multiply(finalColor, textureColor, baseColor)
             self.buffer.Set((x, y), finalColor)
+
             baseColor += dc
             u += du
             v += dv
+
+    def __GetTexturePixelColor(self, u, v, material):
+        # TODO 这里需要对uv做透视矫正，否则渲染的纹理会变形
+        while u < 0:
+            u += 1
+        while u > 1:
+            u -= 1
+        while v < 0:
+            v += 1
+        while v > 1:
+            v -= 1
+        # print('u: {}, v: {}'.format(u, v))
+
+        # 点采样
+        if material.textureFilterMode == ETextureFilterMode.Point:
+            uPixelInt = min(round(material.textureSize[0] * u), material.textureSize[0] - 1)
+            vPixelInt = min(round(material.textureSize[1] * v), material.textureSize[1] - 1)
+            temp = material.texture[uPixelInt, vPixelInt]
+            textureColor = Color(temp[0], temp[1], temp[2])
+        # 双线性插值
+        elif material.textureFilterMode == ETextureFilterMode.Bilinear:
+            uPixel = min(material.textureSize[0] * u, material.textureSize[0] - 1)
+            vPixel = min(material.textureSize[1] * v, material.textureSize[1] - 1)
+            uPixelInt = math.floor(uPixel)
+            uError = uPixel - uPixelInt
+            vPixelInt = math.floor(vPixel)
+            vError = vPixel - vPixelInt
+            if uPixelInt > 0 and vPixelInt > 0:
+                c00 = material.texture[uPixelInt - 1, vPixelInt - 1]
+                c01 = material.texture[uPixelInt, vPixelInt - 1]
+                c10 = material.texture[uPixelInt - 1, vPixelInt]
+                c11 = material.texture[uPixelInt, vPixelInt]
+                textureColor = Color(c00[0], c00[1], c00[2]) * (1 - uError) * (1 - vError) + \
+                               Color(c01[0], c01[1], c01[2]) * uError * (1 - vError) + \
+                               Color(c10[0], c10[1], c10[2]) * (1 - uError) * vError + \
+                               Color(c11[0], c11[1], c11[2]) * uError * vError
+            else:
+                temp = material.texture[uPixelInt, vPixelInt]
+                textureColor = Color(temp[0], temp[1], temp[2])
+        return textureColor
 
     def SetClipRegion(self, p1, p2):
         """设置裁剪区域"""

@@ -16,11 +16,18 @@ class EMaterialShadeMode(IntFlag):
     Texture = 16
 
 
+class ETextureFilterMode(IntFlag):
+    """纹理滤波模式"""
+    Point = 0
+    Bilinear = 1
+
+
 class Material(object):
     """材质"""
 
     def __init__(self):
         self.mode = EMaterialShadeMode.Flat
+        self.textureFilterMode = ETextureFilterMode.Point
         self.color = ColorDefine.White
         self.ka = self.kd = self.ks = 0.0
         self.texture = None
