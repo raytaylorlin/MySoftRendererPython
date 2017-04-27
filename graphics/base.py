@@ -74,6 +74,16 @@ class Poly(BitMixin):
         self.tvList.append(vCopy)
         self.vIndexList.append(i)
 
+    def AddVertexWithoutIndex(self, v, tc=None):
+        self.vList.append(v)
+        # 复制顶点的数据
+        vCopy = Vertex()
+        vCopy.SetPosition(v.pos)
+        vCopy.SetNormal(v.normal)
+        if tc:
+            vCopy.SetTextureCorrd(tc)
+        self.tvList.append(vCopy)
+
     # def Clone(self, objTransList):
     #     newPoly = Poly()
     #     for i in self.vIndexList:
@@ -102,6 +112,22 @@ class EVertexAdjustFlag(IntFlag):
     SwapXY = 32
 
 
+class EVertexClipCode(IntFlag):
+    """顶点裁剪状态"""
+    Null = 0x0000
+    LargerThanXMax = 0x0001
+    LessThanXMin = 0x0002
+    BetweenXMinAndXMax = 0x0004
+
+    LargerThanYMax = 0x0010
+    LessThanYMin = 0x0020
+    BetweenYMinAndYMax = 0x0040
+
+    LargerThanZMax = 0x0100
+    LessThanZMin = 0x0200
+    BetweenZMinAndZMax = 0x0400
+
+
 class Vertex(object):
     """顶点"""
 
@@ -110,6 +136,7 @@ class Vertex(object):
         self.normal = normal or Vector4()
         self.textureCoord = textureCoord or Point(0, 0)
         self.color = color or Color()
+        self.clipCode = EVertexClipCode.Null
 
     def SetPosition(self, pos):
         if isinstance(pos, Vector4):
