@@ -8,7 +8,7 @@ from enum import IntFlag, Enum
 
 from lib.math3d import *
 from graphics.base import *
-from graphics.render import RenderBuffer
+from graphics.render import Buffer, RenderBuffer
 from graphics.lighting import *
 from utils.mixins import BitMixin
 
@@ -21,7 +21,7 @@ class ECameraType(Enum):
 class Camera(object):
     def __init__(self, pos=None, direction=None, cameraType=ECameraType.Euler,
                  lookAt=Vector4(), nearClipZ=0.3, farClipZ=1000,
-                 fieldOfView=90, viewportWidth=RenderBuffer.DefaultWidth, viewportHeight=RenderBuffer.DefaultHeight):
+                 fieldOfView=90, viewportWidth=Buffer.DefaultWidth, viewportHeight=Buffer.DefaultHeight):
         self.pos = pos or Vector4()
         self.direction = direction or Vector4()
         self.u = self.v = self.n = Vector4()
@@ -487,16 +487,17 @@ class RenderList(object):
             v1 = poly.tvList[1]
             v2 = poly.tvList[2]
             if not poly.material.texture:
-                self.rasterizer.DrawTriangle(Point(v0.pos.x, v0.pos.y, v0.color),
-                                             Point(v1.pos.x, v1.pos.y, v1.color),
-                                             Point(v2.pos.x, v2.pos.y, v2.color))
+                self.rasterizer.DrawTriangle(Point.FromVertex(v0),
+                                             Point.FromVertex(v1),
+                                             Point.FromVertex(v2))
             else:
-                self.rasterizer.DrawTriangle(UVPoint(v0.pos.x, v0.pos.y, v0.color, v0.textureCoord.x, v0.textureCoord.y, poly.material),
-                                             UVPoint(v1.pos.x, v1.pos.y, v1.color, v1.textureCoord.x, v1.textureCoord.y, poly.material),
-                                             UVPoint(v2.pos.x, v2.pos.y, v2.color, v2.textureCoord.x, v2.textureCoord.y, poly.material))
+                self.rasterizer.DrawTriangle(UVPoint(v0.pos.x, v0.pos.y, 1 / v0.pos.z, v0.color, v0.textureCoord.x, v0.textureCoord.y, poly.material),
+                                             UVPoint(v1.pos.x, v1.pos.y, 1 / v0.pos.z, v1.color, v1.textureCoord.x, v1.textureCoord.y, poly.material),
+                                             UVPoint(v2.pos.x, v2.pos.y, 1 / v0.pos.z, v2.color, v2.textureCoord.x, v2.textureCoord.y, poly.material))
 
     def PreRender(self, camera, lightList):
         self.CheckBackFace(camera)
+        # TODO 这里实际上也要把光源也变换到相机空间
         self.TransformWorldToCamera(camera)
         self.ClipPoly(camera)
         self.CalculateLighting(lightList)

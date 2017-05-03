@@ -3,7 +3,7 @@
 import os
 import random
 from graphics.base import Vertex
-from graphics.render import Rasterizer, RenderBuffer, ImageRenderer
+from graphics.render import Rasterizer, RenderBuffer, ImageRenderer, Buffer
 from lib.math3d import Point, Color, ColorDefine
 from utils import log
 
@@ -56,8 +56,8 @@ def DrawRandomInterpolationTriangle(randomNum, filename):
     buffer = RenderBuffer(color=ColorDefine.Black)
     rasterizer = Rasterizer(buffer)
 
-    sizeW = RenderBuffer.DefaultWidth
-    sizeH = RenderBuffer.DefaultHeight
+    sizeW = Buffer.DefaultWidth
+    sizeH = Buffer.DefaultHeight
     for i in range(randomNum):
         p1 = Point(random.randrange(sizeW), random.randrange(sizeH), Color.Random())
         p2 = Point(random.randrange(sizeW), random.randrange(sizeH), Color.Random())

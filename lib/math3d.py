@@ -267,9 +267,10 @@ class ColorDefine(object):
 class Point(object):
     """简单2D点定义"""
 
-    def __init__(self, x=0, y=0, color=ColorDefine.Black):
+    def __init__(self, x=0, y=0, z=0, color=ColorDefine.Black):
         self.x = x
         self.y = y
+        self.z = z
         self.color = color
 
     @staticmethod
@@ -277,6 +278,8 @@ class Point(object):
         point = Point()
         point.x = v.pos.x
         point.y = v.pos.y
+        # Z取倒数
+        point.z = 1 / v.pos.z
         point.color = v.color
         return point
 
@@ -286,15 +289,15 @@ class Point(object):
             t = 0
         elif t > 1:
             t = 1
-        return Point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+        return Point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t)
 
     def __str__(self):
-        return '{} {}'.format((self.x, self.y), self.color)
+        return '{} {}'.format((self.x, self.y, self.z), self.color)
 
 
 class UVPoint(Point):
-    def __init__(self, x, y, color, u, v, material):
-        super(UVPoint, self).__init__(x, y, color)
+    def __init__(self, x, y, z, color, u, v, material):
+        super(UVPoint, self).__init__(x, y, z, color)
         self.u = u
         self.v = v
         self.material = material

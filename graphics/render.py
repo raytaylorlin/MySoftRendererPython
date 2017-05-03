@@ -8,9 +8,10 @@ from lib.math3d import *
 
 
 class Rasterizer(object):
-    def __init__(self, buffer):
+    def __init__(self, buffer, zbuffer=None):
         self.buffer = buffer
         self.clipRegion = [Point(0, 0), Point(buffer.width, buffer.height)]
+        self.zbuffer = zbuffer
 
     def DrawLine(self, p1, p2, color):
         """
@@ -97,12 +98,15 @@ class Rasterizer(object):
             # 由上面点的排序可知，p1-p3必为长边，在长边上找出分割点的X坐标
             rate = (p2.y - p1.y) / (p3.y - p1.y)
             splitX = p1.x + (p3.x - p1.x) * rate
+            splitZ = p1.z + (p3.z - p1.z) * rate
             splitColor = Color.Lerp(p1.color, p3.color, rate)
             if isinstance(p1, UVPoint):
-                splitPoint = UVPoint(splitX, p2.y, splitColor,
-                                     p1.u + (p3.u - p1.u) * rate, p1.v + (p3.v - p1.v) * rate, p1.material)
+                splitU = p1.u + (p3.u - p1.u) * rate
+                splitV = p1.v + (p3.v - p1.v) * rate
+                splitPoint = UVPoint(splitX, p2.y, splitZ, splitColor,
+                                     splitU, splitV, p1.material)
             else:
-                splitPoint = Point(splitX, p2.y, splitColor)
+                splitPoint = Point(splitX, p2.y, splitZ, splitColor)
             # 画被分割的上平底和下平顶三角形
             self.DrawBottomFlatTriangle(p1, splitPoint, p2)
             self.DrawTopFlatTriangle(p2, splitPoint, p3)
@@ -120,9 +124,12 @@ class Rasterizer(object):
             height = _p3.y - _p1.y
             dxLeft = (_p2.x - _p1.x) / height
             dxRight = (_p3.x - _p1.x) / height
+            dzLeft = (_p2.z - _p1.z) / height
+            dzRight = (_p3.z - _p1.z) / height
             dcLeft = (_p2.color - _p1.color) / height
             dcRight = (_p3.color - _p1.color) / height
             xs = xe = _p1.x
+            zs = ze = _p1.z
             cs = ce = _p1.color
             log.logger.debug('bottom flat: {}\n{}\n{}\n'.format(p1, p2, p3))
             if isinstance(_p1, UVPoint):
@@ -130,9 +137,9 @@ class Rasterizer(object):
                 te = [_p1.u, _p1.v]
                 dtLeft = ((_p2.u - _p1.u) / height, (_p2.v - _p1.v) / height)
                 dtRight = ((_p3.u - _p1.u) / height, (_p3.v - _p1.v) / height)
-                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (ts, te, dtLeft, dtRight)
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (zs, ze, dzLeft, dzRight), (ts, te, dtLeft, dtRight)
             else:
-                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), None
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (zs, ze, dzLeft, dzRight), None
 
         self.__DrawClipTriangle(p1, p2, p3, __Init)
 
@@ -149,25 +156,29 @@ class Rasterizer(object):
             height = _p3.y - _p1.y
             dxLeft = (_p3.x - _p1.x) / height
             dxRight = (_p3.x - _p2.x) / height
+            dzLeft = (_p3.z - _p1.z) / height
+            dzRight = (_p3.z - _p2.z) / height
             dcLeft = (_p3.color - _p1.color) / height
             dcRight = (_p3.color - _p2.color) / height
             xs, xe = _p1.x, _p2.x
+            zs, ze = _p1.z, _p2.z
             cs, ce = _p1.color, _p2.color
             log.logger.debug('top flat: {}\n{}\n{}\n'.format(p1, p2, p3))
             if isinstance(_p1, UVPoint):
                 ts, te = [_p1.u, _p1.v], [_p2.u, _p2.v]
                 dtLeft = ((_p3.u - _p1.u) / height, (_p3.v - _p1.v) / height)
                 dtRight = ((_p3.u - _p2.u) / height, (_p3.v - _p2.v) / height)
-                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (ts, te, dtLeft, dtRight)
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (zs, ze, dzLeft, dzRight), (ts, te, dtLeft, dtRight)
             else:
-                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), None
+                return (xs, xe, dxLeft, dxRight), (cs, ce, dcLeft, dcRight), (zs, ze, dzLeft, dzRight), None
 
         self.__DrawClipTriangle(p1, p2, p3, __Init)
 
     def __DrawClipTriangle(self, p1, p2, p3, initFunc):
-        x1, y1, c1, x2, y2, c2, x3, y3, c3 = p1.x, p1.y, p1.color, p2.x, p2.y, p2.color, p3.x, p3.y, p3.color
-        posInfo, colorInfo, textureInfo = initFunc(p1, p2, p3)
+        x1, y1, z2, c1, x2, y2, z2, c2, x3, y3, z3, c3 = p1.x, p1.y, p1.z, p1.color, p2.x, p2.y, p2.z, p2.color, p3.x, p3.y, p3.z, p3.color
+        posInfo, colorInfo, zInfo, textureInfo = initFunc(p1, p2, p3)
         xs, xe, dxLeft, dxRight = posInfo
+        zs, ze, dzLeft, dzRight = zInfo
         cs, ce, dcLeft, dcRight = colorInfo
         if textureInfo:
             ts, te, dtLeft, dtRight = textureInfo
@@ -180,6 +191,8 @@ class Rasterizer(object):
         if y1 < minClipY:
             xs = xs + dxLeft * (minClipY - y1)
             xe = xe + dxRight * (minClipY - y1)
+            zs = zs + dzLeft * (minClipY - y1)
+            ze = ze + dzRight * (minClipY - y1)
             cs = Color.Lerp(c1, c2, minClipY / (y3 - y1))
             ce = Color.Lerp(c1, c3, minClipY / (y3 - y1))
             y1 = minClipY
@@ -188,6 +201,8 @@ class Rasterizer(object):
             iy1 = math.ceil(y1)
             xs = xs + dxLeft * (iy1 - y1)
             xe = xe + dxRight * (iy1 - y1)
+            zs = zs + dzLeft * (iy1 - y1)
+            ze = ze + dzRight * (iy1 - y1)
 
         # 裁剪Y轴下顶点
         if y3 > maxClipY:
@@ -201,74 +216,95 @@ class Rasterizer(object):
         if minClipX <= x1 <= maxClipX and minClipX <= x2 <= maxClipX and minClipX <= x3 <= maxClipX:
             for loopY in range(iy1, iy3 + 1):
                 if textureInfo:
-                    self.__DrawTexturedHorizontalLine(round(xs), round(xe), loopY, cs, ce, ts, te, p1.material)
+                    self.__DrawTexturedHorizontalLine(round(xs), round(xe), zs, ze, loopY, cs, ce, ts, te, p1.material)
                     xs += dxLeft
                     xe += dxRight
                     cs += dcLeft
                     ce += dcRight
+                    zs += dzLeft
+                    ze += dzRight
                     ts[0] += dtLeft[0]
                     ts[1] += dtLeft[1]
                     te[0] += dtRight[0]
                     te[1] += dtRight[1]
                 else:
-                    self.__DrawHorizontalLine(round(xs), round(xe), loopY, cs, ce)
+                    self.__DrawHorizontalLine(round(xs), round(xe), zs, ze, loopY, cs, ce)
                     xs += dxLeft
                     xe += dxRight
+                    zs += dzLeft
+                    ze += dzRight
                     cs += dcLeft
                     ce += dcRight
 
         else:
+            # TODO 这里没有对裁剪情况做纹理映射
             # 裁剪X轴会稍微慢一些
             for loopY in range(iy1, iy3 + 1):
                 left = xs
                 right = xe
+                leftZ = zs
+                rightZ = ze
                 leftC = cs
                 rightC = ce
                 xs += dxLeft
                 xe += dxRight
+                zs += dzLeft
+                ze += dzRight
                 cs += dcLeft
                 ce += dcRight
                 if left < minClipX:
                     left = minClipX
+                    leftZ = zs + (ze - zs) * minClipX / (xe - xs)
                     leftC = Color.Lerp(cs, ce, minClipX / (xe - xs))
                     if right < minClipX:
                         continue
                 if right > maxClipX:
                     right = maxClipX
+                    rightZ = zs + (ze - zs) * maxClipX / (xe - xs)
                     rightC = Color.Lerp(cs, ce, maxClipX / (xe - xs))
                     if left > maxClipX:
                         continue
-                self.__DrawHorizontalLine(round(left), round(right), loopY, leftC, rightC)
+                self.__DrawHorizontalLine(round(left), round(right), leftZ, rightZ, loopY, leftC, rightC)
 
-    def __DrawHorizontalLine(self, x1, x2, y, c1, c2):
+    def __DrawHorizontalLine(self, x1, x2, z1, z2, y, c1, c2):
         """画水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
             c1, c2 = c2, c1
+            z1, z2 = z2, z1
         elif x1 == x2:
             return
 
+        dz = (z2 - z1) / (x2 - x1)
+        z = z1
         sameColor = c1 == c2
         if sameColor:
             for x in range(x1, x2):
-                self.buffer.Set((x, y), c1)
+                self.__SetBufferPixel(x, y, z, c1)
+                z += dz
+                # self.buffer.Set((x, y), c1)
         else:
             dc = (c2 - c1) / (x2 - x1)
             color = c1
             for x in range(x1, x2):
-                self.buffer.Set((x, y), color)
+                self.__SetBufferPixel(x, y, z, color)
+                # self.buffer.Set((x, y), color)
+                z += dz
                 color += dc
 
-    def __DrawTexturedHorizontalLine(self, x1, x2, y, c1, c2, uv1, uv2, material):
+    def __DrawTexturedHorizontalLine(self, x1, x2, z1, z2, y, c1, c2, uv1, uv2, material):
         """画带纹理的水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
             c1, c2 = c2, c1
+            z1, z2 = z2, z1
             uv1, uv2 = uv2, uv1
         elif x1 == x2:
             return
 
         dc = (c2 - c1) / (x2 - x1)
+        dz = (z2 - z1) / (x2 - x1)
+        z = z1
         du = (uv2[0] - uv1[0]) / (x2 - x1)
         dv = (uv2[1] - uv1[1]) / (x2 - x1)
         baseColor = c1
@@ -279,11 +315,22 @@ class Rasterizer(object):
             # 用光照颜色去调制纹理颜色
             finalColor = Color()
             Color.Multiply(finalColor, textureColor, baseColor)
-            self.buffer.Set((x, y), finalColor)
+            self.__SetBufferPixel(x, y, z, finalColor)
+            # self.buffer.Set((x, y), finalColor)
 
             baseColor += dc
+            z += dz
             u += du
             v += dv
+
+    def __SetBufferPixel(self, x, y, z, c):
+        if self.zbuffer:
+            # 判断Z缓存
+            if z > self.zbuffer.Get((x, y)):
+                self.buffer.Set((x, y), c)
+                self.zbuffer.Set((x, y), z)
+        else:
+            self.buffer.Set((x, y), c)
 
     def __GetTexturePixelColor(self, u, v, material):
         # TODO 这里需要对uv做透视矫正，否则渲染的纹理会变形
@@ -333,48 +380,80 @@ class Rasterizer(object):
         self.clipRegion[1] = p2
 
 
-class RenderBuffer(object):
+class Buffer(object):
     DefaultWidth = 800
     DefaultHeight = 800
 
-    def __init__(self, width=DefaultWidth, height=DefaultHeight, color=Color()):
+    def __init__(self, width=DefaultWidth, height=DefaultHeight, d=None):
         self.width = width
         self.height = height
-        self.data = [[color for i in range(self.width)] for j in range(self.height)]
-        c = color.tuple
-        self.raw = [c for i in range(self.width) for j in range(self.height)]
+        self.data = [[d for i in range(self.width)] for j in range(self.height)]
 
     def Get(self, pos):
         return self.data[pos[0]][pos[1]]
 
-    def Set(self, pos, color):
-        # assert isinstance(color, Color), 'The param color is not a instance of Color'
-        if pos[0] < 0 or pos[1] < 0 or pos[0] >= self.width or pos[1] >= self.height:
-            return
-        self.data[pos[0]][pos[1]] = color
-        self.raw[pos[1] * self.width + pos[0]] = color.tuple
+    def IsPositionValid(self, pos):
+        return 0 <= pos[0] < self.width and 0 <= pos[1] < self.height
 
-    def Clear(self, color=Color()):
-        self.data = [[color for i in range(self.width)] for j in range(self.height)]
-        c = color.tuple
-        self.raw = [c for i in range(self.width) for j in range(self.height)]
+    def Set(self, pos, d):
+        if self.IsPositionValid(pos):
+            self.data[pos[0]][pos[1]] = d
+            return True
+        return False
+
+    def Clear(self, d=None):
+        for i in range(self.width):
+            for j in range(self.height):
+                self.data[i][j] = d
 
     def GetData(self):
         result = []
         for y in range(self.height):
             for x in range(self.width):
-                color = self.data[x][y]
-                result.append((color.r, color.g, color.b, color.a))
+                d = self.data[x][y]
+                result.append(d)
         return result
 
-    def __str__(self):
-        result = []
-        for line in self.data:
-            for item in line:
-                result.append(str(item))
-                result.append(' ')
-            result.append('\n')
-        return ''.join(result)
+
+class RenderBuffer(Buffer):
+    """渲染缓存，存放像素颜色数据"""
+
+    def __init__(self, width=Buffer.DefaultWidth, height=Buffer.DefaultHeight, color=Color()):
+        super(RenderBuffer, self).__init__(width, height, color)
+        c = color.tuple
+        self.raw = [c for i in range(self.width) for j in range(self.height)]
+
+    def Set(self, pos, color):
+        # assert isinstance(color, Color), 'The param color is not a instance of Color'
+        if super(RenderBuffer, self).Set(pos, color):
+            self.raw[pos[1] * self.width + pos[0]] = color.tuple
+
+    def Clear(self, color=Color()):
+        super(RenderBuffer, self).Clear(color)
+        c = color.tuple
+        self.raw = [c for i in range(self.width) for j in range(self.height)]
+
+    def GetData(self):
+        return self.raw
+
+    # def __str__(self):
+    #     result = []
+    #     for line in self.data:
+    #         for item in line:
+    #             result.append(str(item))
+    #             result.append(' ')
+    #         result.append('\n')
+    #     return ''.join(result)
+
+
+class ZBuffer(Buffer):
+    """Z缓存"""
+
+    def __init__(self, width=Buffer.DefaultWidth, height=Buffer.DefaultHeight):
+        super(ZBuffer, self).__init__(width, height, 0)
+
+    def Clear(self, d=0):
+        super(ZBuffer, self).Clear(d)
 
 
 class RenderInterface(object):
