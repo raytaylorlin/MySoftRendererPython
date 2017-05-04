@@ -491,9 +491,9 @@ class RenderList(object):
                                              Point.FromVertex(v1),
                                              Point.FromVertex(v2))
             else:
-                self.rasterizer.DrawTriangle(UVPoint(v0.pos.x, v0.pos.y, 1 / v0.pos.z, v0.color, v0.textureCoord.x, v0.textureCoord.y, poly.material),
-                                             UVPoint(v1.pos.x, v1.pos.y, 1 / v0.pos.z, v1.color, v1.textureCoord.x, v1.textureCoord.y, poly.material),
-                                             UVPoint(v2.pos.x, v2.pos.y, 1 / v0.pos.z, v2.color, v2.textureCoord.x, v2.textureCoord.y, poly.material))
+                self.rasterizer.DrawTriangle(UVPoint(v0.pos.x, v0.pos.y, v0.pos.z, v0.color, v0.textureCoord.x, v0.textureCoord.y, poly.material),
+                                             UVPoint(v1.pos.x, v1.pos.y, v1.pos.z, v1.color, v1.textureCoord.x, v1.textureCoord.y, poly.material),
+                                             UVPoint(v2.pos.x, v2.pos.y, v2.pos.z, v2.color, v2.textureCoord.x, v2.textureCoord.y, poly.material))
 
     def PreRender(self, camera, lightList):
         self.CheckBackFace(camera)

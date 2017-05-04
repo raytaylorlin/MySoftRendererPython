@@ -8,14 +8,15 @@ from lib.reader.cob import COBReader
 
 def Main_TestDrawTextureCube():
     DrawCube('output/draw_textured_cube.png', removeBackFace=False)
-    # DrawCube('output/draw_cube_removebackface.png', removeBackFace=True)
 
 
 def DrawCube(filename, removeBackFace):
     camera = Camera()
 
     obj = COBReader('res/cube_flat_textured.cob').LoadObject(
-        adjustFlag=EVertexAdjustFlag.SwapXY, textureFilterMode=ETextureFilterMode.Bilinear)
+        adjustFlag=EVertexAdjustFlag.SwapXY, textureFilterMode=ETextureFilterMode.Point)
+    # obj = COBReader('res/cube_flat_textured_perspective.cob').LoadObject(
+    #     adjustFlag=EVertexAdjustFlag.SwapXY, textureFilterMode=ETextureFilterMode.Point)
     obj.SetTransform(scale=25, eulerRotation=(-45, 45, 0), worldPos=Vector4(0, 0, 100))
     obj.material.color = ColorDefine.Black
 

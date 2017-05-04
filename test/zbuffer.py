@@ -34,6 +34,7 @@ def Init():
     normalCube.material.color = ColorDefine.White
 
     buffer = RenderBuffer(color=ColorDefine.Black)
+    # 可以将下面置为None看看错误的效果
     zbuffer = ZBuffer()
     lightList = [
         AmbientLight(ColorDefine.Gray),
@@ -46,7 +47,8 @@ def Init():
 
 def RenderOneFrame(camera, texturedCube, normalCube, buffer, zbuffer, renderList, lightList, objZ):
     buffer.Clear(color=ColorDefine.Black)
-    zbuffer.Clear()
+    if zbuffer:
+        zbuffer.Clear()
 
     texturedCube.SetWorldPosition(Vector4(0, 0, objZ))
     renderList.Reset()

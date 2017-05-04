@@ -278,8 +278,7 @@ class Point(object):
         point = Point()
         point.x = v.pos.x
         point.y = v.pos.y
-        # Z取倒数
-        point.z = 1 / v.pos.z
+        point.z = v.pos.z
         point.color = v.color
         return point
 
@@ -292,7 +291,7 @@ class Point(object):
         return Point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t)
 
     def __str__(self):
-        return '{} {}'.format((self.x, self.y, self.z), self.color)
+        return 'pos: {} color: {}'.format((self.x, self.y, self.z), self.color)
 
 
 class UVPoint(Point):
@@ -303,4 +302,4 @@ class UVPoint(Point):
         self.material = material
 
     def __str__(self):
-        return '{} {} {}'.format((self.x, self.y), self.color, (self.u, self.v))
+        return 'pos: {} color: {} uv: {}'.format((self.x, self.y, self.z), self.color, (self.u, self.v))
