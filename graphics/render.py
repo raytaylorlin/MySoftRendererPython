@@ -278,28 +278,28 @@ class Rasterizer(object):
                         continue
                 self.__DrawHorizontalLine(round(left), round(right), leftZ, rightZ, loopY, leftC, rightC)
 
-    def __DrawHorizontalLine(self, x1, x2, z1, z2, y, c1, c2):
+    def __DrawHorizontalLine(self, x1, x2, iz1, iz2, y, c1, c2):
         """画水平扫描线（颜色不同则对颜色插值）"""
         if x1 > x2:
             x1, x2 = x2, x1
             c1, c2 = c2, c1
-            z1, z2 = z2, z1
+            iz1, iz2 = iz2, iz1
         elif x1 == x2:
             return
 
-        dz = (z2 - z1) / (x2 - x1)
-        z = z1
+        diz = (iz2 - iz1) / (x2 - x1)
+        iz = iz1
         sameColor = c1 == c2
         if sameColor:
             for x in range(x1, x2):
-                self.__SetBufferPixel(x, y, z, c1)
-                z += dz
+                self.__SetBufferPixel(x, y, iz, c1)
+                iz += diz
         else:
             dc = (c2 - c1) / (x2 - x1)
             color = c1
             for x in range(x1, x2):
-                self.__SetBufferPixel(x, y, z, color)
-                z += dz
+                self.__SetBufferPixel(x, y, iz, color)
+                iz += diz
                 color += dc
 
     def __DrawTexturedHorizontalLine(self, x1, x2, iz1, iz2, y, c1, c2, uv1, uv2, material):
